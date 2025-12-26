@@ -31,7 +31,7 @@ link: wl.list.Link = undefined,
 rwm_window: *river.WindowV1,
 rwm_window_node: *river.NodeV1,
 
-output: ?*Output,
+output: ?*Output = null,
 former_output: ?u32 = null,
 
 unhandled_events: std.ArrayList(Event) = .empty,
@@ -68,7 +68,7 @@ operator: union(enum) {
 } = .none,
 
 
-pub fn create(rwm_window: *river.WindowV1, output: *Output) !*Self {
+pub fn create(rwm_window: *river.WindowV1, tag: u32) !*Self {
     const window = try utils.allocator.create(Self);
     errdefer utils.allocator.destroy(window);
 
@@ -79,8 +79,7 @@ pub fn create(rwm_window: *river.WindowV1, output: *Output) !*Self {
     window.* = .{
         .rwm_window = rwm_window,
         .rwm_window_node = rwm_window_node,
-        .output = output,
-        .tag = output.tag,
+        .tag = tag,
     };
     window.link.init();
     try window.unhandled_events.append(utils.allocator, .init);

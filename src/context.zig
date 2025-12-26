@@ -263,7 +263,7 @@ fn rwm_listener(rwm: *river.WindowManagerV1, event: river.WindowManagerV1.Event,
                 return;
             };
 
-            const window = Window.create(data.id, current_output) catch |err| {
+            const window = Window.create(data.id, current_output.tag) catch |err| {
                 log.err("create window failed: {}", .{ err });
                 return;
             };
