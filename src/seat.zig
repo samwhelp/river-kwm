@@ -22,6 +22,7 @@ rwm_layer_shell_seat: *river.LayerShellSeatV1,
 
 new: bool = undefined,
 focus_exclusive: bool = false,
+window_below_pointer: ?*Window = null,
 unhandled_actions: std.ArrayList(binding.Action) = .empty,
 xkb_bindings: std.EnumMap(config.seat.Mode, std.ArrayList(*binding.XkbBinding)) = undefined,
 pointer_bindings: std.EnumMap(config.seat.Mode, std.ArrayList(*binding.PointerBinding)) = undefined,
@@ -203,10 +204,14 @@ fn handle_bindings(self: *Self) void {
                 context.spawn_shell(cmd);
             },
             .pointer_move => {
-                context.focused().?.prepare_move(self);
+                if (self.window_below_pointer) |window| {
+                    window.prepare_move(self);
+                }
             },
             .pointer_resize => {
-                context.focused().?.prepare_resize(self);
+                if (self.window_below_pointer) |window| {
+                    window.prepare_resize(self);
+                }
             },
             .switch_mode => |mode| {
                 context.switch_mode(mode);
@@ -270,9 +275,19 @@ fn rwm_seat_listener(rwm_seat: *river.SeatV1, event: river.SeatV1.Event, seat: *
         },
         .pointer_enter => |data| {
             log.debug("<{*}> pointer enter: {*}", .{ seat, data.window });
+
+            const rwm_window = data.window orelse return;
+
+            const window: *Window = @ptrCast(
+                @alignCast(river.WindowV1.getUserData(rwm_window))
+            );
+
+            seat.window_below_pointer = window;
         },
         .pointer_leave => {
             log.debug("<{*}> pointer leave", .{ seat });
+
+            seat.window_below_pointer = null;
         },
         .removed => {
             log.debug("<{*}> removed", .{ seat });
