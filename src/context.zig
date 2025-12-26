@@ -241,6 +241,17 @@ fn rwm_listener(rwm: *river.WindowManagerV1, event: river.WindowManagerV1.Event,
                 }
             }
 
+            if (!context.focus_exclusive()) {
+                if (context.focused()) |window| {
+                    {
+                        var it = context.seats.safeIterator(.forward);
+                        while (it.next()) |seat| {
+                            seat.focus(window);
+                        }
+                    }
+                }
+            }
+
             rwm.manageFinish();
         },
         .render_start => {

@@ -41,6 +41,7 @@ maximize: bool = false,
 floating: bool = false,
 
 tag: u32,
+focused: bool = false,
 app_id: ?[]const u8 = null,
 title: ?[]const u8 = null,
 parent: ?*Self = null,
@@ -145,6 +146,22 @@ pub fn resize(self: *Self, width: ?i32, height: ?i32) void {
             self.output.?.height-self.y-config.window.border_width
         )
     );
+}
+
+
+pub fn focus(self: *Self) void {
+    log.debug("<{*}> focused", .{ self });
+
+    self.focused = true;
+}
+
+
+pub fn unfocus(self: *Self) void {
+    log.debug("<{*}> unfocus", .{ self });
+
+    std.debug.assert(self.focused);
+
+    self.focused = false;
 }
 
 

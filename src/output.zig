@@ -86,7 +86,8 @@ pub fn add_window(self: *Self, window: *Window) void {
 
     std.debug.assert(window.output == null);
 
-    self.current_window = window;
+    window.focus();
+    if (self.current_window) |win| win.unfocus();
     self.windows.prepend(window);
     window.output = self;
 }
@@ -98,10 +99,6 @@ pub fn inherit_windows(self: *Self, windows: *wl.list.Head(Window, .link)) void 
     }
 
     log.debug("<{*}> inherit {} windows", .{ self, windows.length() });
-
-    if (self.windows.empty()) {
-        self.current_window = windows.first();
-    }
 
     {
         var it = windows.safeIterator(.forward);
@@ -131,29 +128,36 @@ pub fn promote_new_window(self: *Self) void {
     log.debug("<{*}> promote new window", .{ self });
 
     const former_window = self.current_window.?;
-    const current_window = utils.cycle_list(
-        Window,
-        &self.windows.link,
-        &former_window.link,
-        .prev,
-    );
 
-    self.set_current_window(
-        if (current_window == former_window) null
-        else current_window
-    );
-}
+    var current_window: *Window = undefined;
+    {
+        var win = former_window;
+        while (true) {
+            current_window = utils.cycle_list(
+                Window,
+                &self.windows.link,
+                &win.link,
+                .prev,
+            );
+            if (current_window.visiable(self)) {
+                break;
+            } else {
+                win = current_window;
+            }
+        }
+    }
 
+    former_window.unfocus();
 
-pub inline fn set_current_window(self: *Self, window: ?*Window) void {
-    log.debug("<{*}> set current window: {*}", .{ self, window });
-
-    self.current_window = window;
+    if (current_window != former_window) {
+        current_window.focus();
+    }
 }
 
 
 pub fn manage(self: *Self) void {
-    // TODO
+    self.refresh_current_window();
+
     {
         var it = self.windows.safeIterator(.forward);
         while (it.next()) |window| {
@@ -168,22 +172,45 @@ pub fn manage(self: *Self) void {
 pub fn render(self: *Self) void {
     defer log.debug("<{*}> rendered", .{ self });
 
-    // TODO
     const context = Context.get();
-    const focused = context.focused();
     {
         var it = self.windows.safeIterator(.forward);
         while (it.next()) |window| {
             if (window.visiable(self)) {
                 window.set_border(
                     config.window.border_width,
-                    if (!context.focus_exclusive() and window == focused)
+                    if (!context.focus_exclusive() and window.focused)
                         config.window.border_color.focus
                     else config.window.border_color.unfocus
                 );
                 window.render();
             } else {
                 window.hide();
+            }
+        }
+    }
+}
+
+
+pub fn refresh_current_window(self: *Self) void {
+    self.current_window = null;
+    {
+        var it = self.windows.safeIterator(.forward);
+        while (it.next()) |window| {
+            if (window.visiable(self) and window.focused) {
+                std.debug.assert(self.current_window == null);
+                self.current_window = window;
+            }
+        }
+    }
+    if (self.current_window == null) {
+        {
+            var it = self.windows.safeIterator(.forward);
+            while (it.next()) |window| {
+                if (!window.visiable(self)) continue;
+                window.focus();
+                self.current_window = window;
+                break;
             }
         }
     }

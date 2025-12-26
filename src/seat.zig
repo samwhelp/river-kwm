@@ -163,6 +163,13 @@ pub inline fn op_end(self: *Self) void {
 }
 
 
+pub inline fn focus(self: *Self, window: *Window) void {
+    log.debug("<{*}> focus {*}", .{ self, window });
+
+    self.rwm_seat.focusWindow(window.rwm_window);
+}
+
+
 pub fn manage(self: *Self) void {
     defer log.debug("<{*}> managed", .{ self });
 
@@ -177,11 +184,6 @@ pub fn manage(self: *Self) void {
     self.handle_bindings();
 
     self.rwm_seat.clearFocus();
-    if (!self.focus_exclusive) {
-        if (context.focused()) |window| {
-            self.rwm_seat.focusWindow(window.rwm_window);
-        }
-    }
 }
 
 
@@ -288,8 +290,14 @@ fn rwm_seat_listener(rwm_seat: *river.SeatV1, event: river.SeatV1.Event, seat: *
                 @alignCast(river.WindowV1.getUserData(data.window.?))
             );
 
+            if (context.focused()) |win| {
+                std.debug.assert(win.focused);
+
+                win.unfocus();
+            }
+
             context.set_current_output(window.output.?);
-            window.output.?.set_current_window(window);
+            window.focus();
         },
         .wl_seat => |data| {
             log.debug("<{*}> wl_seat: {}", .{ seat, data.name });
