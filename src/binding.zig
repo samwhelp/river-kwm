@@ -14,4 +14,7 @@ pub const Action = union(enum) {
     pointer_move,
     pointer_resize,
     switch_mode: config.seat.Mode,
+    toggle_fullscreen: struct {
+        window: bool = false,
+    },
 };
