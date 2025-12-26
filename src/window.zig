@@ -112,22 +112,20 @@ pub fn destroy(self: *Self) void {
 pub fn move(self: *Self, x: ?i32, y: ?i32) void {
     defer log.debug("<{*}> move to (x: {}, y: {})", .{ self, self.x, self.y });
 
-    if (x) |x_|
-        self.x = @max(
-            config.window.border_width,
-            @min(
-                x_,
-                self.output.?.width-self.width-config.window.border_width
-            )
-        );
-    if (y) |y_|
-        self.y = @max(
-            config.window.border_width,
-            @min(
-                y_,
-                self.output.?.height-self.height-config.window.border_width
-            )
-        );
+    self.x = @max(
+        config.window.border_width,
+        @min(
+            x orelse self.x,
+            self.output.?.width-self.width-config.window.border_width
+        )
+    );
+    self.y = @max(
+        config.window.border_width,
+        @min(
+            y orelse self.y,
+            self.output.?.height-self.height-config.window.border_width
+        )
+    );
 }
 
 
@@ -137,17 +135,17 @@ pub fn resize(self: *Self, width: ?i32, height: ?i32) void {
         .{ self, self.width, self.height },
     );
 
-    if (width) |w| self.width = @max(
+    self.width = @max(
         0,
         @min(
-            w,
+            width orelse self.width,
             self.output.?.width-self.x-config.window.border_width
         )
     );
-    if (height) |h| self.height = @max(
+    self.height = @max(
         0,
         @min(
-            h,
+            height orelse self.height,
             self.output.?.height-self.y-config.window.border_width
         )
     );
