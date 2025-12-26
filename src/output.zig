@@ -173,13 +173,17 @@ pub fn render(self: *Self) void {
     defer log.debug("<{*}> rendered", .{ self });
 
     const context = Context.get();
+    const focused = context.focused();
     {
         var it = self.windows.safeIterator(.forward);
         while (it.next()) |window| {
             if (window.visiable(self)) {
+                if (window.focused) {
+                    window.rwm_window_node.placeTop();
+                }
                 window.set_border(
                     config.window.border_width,
-                    if (!context.focus_exclusive() and window.focused)
+                    if (!context.focus_exclusive() and window == focused)
                         config.window.border_color.focus
                     else config.window.border_color.unfocus
                 );
