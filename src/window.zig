@@ -430,7 +430,7 @@ fn rwm_window_listener(rwm_window: *river.WindowV1, event: river.WindowV1.Event,
             window.set_title(mem.span(title));
         },
         .closed => {
-            log.debug("<{*}> closed", .{window});
+            log.debug("<{*}> closed", .{ window });
 
             if (window.output) |owner| {
                 owner.remove_window(window);
@@ -470,12 +470,12 @@ fn rwm_window_listener(rwm_window: *river.WindowV1, event: river.WindowV1.Event,
             window.prepare_fullscreen(output);
         },
         .exit_fullscreen_requested => {
-            log.debug("<{*}> exit fullscreen requested", .{window});
+            log.debug("<{*}> exit fullscreen requested", .{ window });
 
             window.prepare_unfullscreen();
         },
         .maximize_requested => {
-            log.debug("<{*}> maximize requested", .{window});
+            log.debug("<{*}> maximize requested", .{ window });
 
             window.prepare_maximize(true);
         },
@@ -485,7 +485,7 @@ fn rwm_window_listener(rwm_window: *river.WindowV1, event: river.WindowV1.Event,
             window.prepare_maximize(false);
         },
         .minimize_requested => {
-            log.debug("<{*}> minimize requested", .{window});
+            log.debug("<{*}> minimize requested", .{ window });
         },
         .parent => |data| {
             const parent_rwm_window = data.parent orelse return;
