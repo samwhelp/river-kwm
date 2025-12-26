@@ -180,10 +180,10 @@ fn handle_bindings(self: *Self) void {
                 context.spawn_shell(cmd);
             },
             .pointer_move => {
-                context.focused().?.prepare_move(context.current_seat.?);
+                context.focused().?.prepare_move(self);
             },
             .pointer_resize => {
-                context.focused().?.prepare_resize(context.current_seat.?);
+                context.focused().?.prepare_resize(self);
             },
             else => {}
         }
