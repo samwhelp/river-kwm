@@ -196,11 +196,6 @@ fn rwm_seat_listener(rwm_seat: *river.SeatV1, event: river.SeatV1.Event, seat: *
 
     const context = Context.get();
 
-    if (seat != context.current_seat) {
-        log.debug("<{*}> is not current seat, ignore event: {s}", .{ seat, @tagName(event) });
-        return;
-    }
-
     switch (event) {
         .op_delta => |data| {
             log.debug("<{*}> op delta: (dx: {}, dy: {})", .{ seat, data.dx, data.dy });
@@ -209,28 +204,42 @@ fn rwm_seat_listener(rwm_seat: *river.SeatV1, event: river.SeatV1.Event, seat: *
             switch (window.operator) {
                 .none => unreachable,
                 .move => |op_data| {
-                    std.debug.assert(seat == op_data.seat);
-
-                    window.move(
-                        op_data.start_x+data.dx,
-                        op_data.start_y+data.dy,
-                    );
+                    if (op_data.seat == seat) {
+                        window.move(
+                            op_data.start_x+data.dx,
+                            op_data.start_y+data.dy,
+                        );
+                    }
                 },
                 .resize => |op_data| {
-                    std.debug.assert(seat == op_data.seat);
-
-                    window.resize(op_data.start_width+data.dx, op_data.start_height+data.dy);
+                    if (op_data.seat == seat) {
+                        window.resize(
+                            op_data.start_width+data.dx,
+                            op_data.start_height+data.dy,
+                        );
+                    }
                 }
             }
         },
         .op_release => {
             log.debug("<{*}> op release", .{ seat });
 
-            const window = context.focused().?;
-            switch (window.operator) {
-                .none => {},
-                .move => window.prepare_move(null),
-                .resize => window.prepare_resize(null),
+            if (context.focused()) |window| {
+                switch (window.operator) {
+                    .none => {},
+                    .move => |data| {
+                        if (data.seat == seat) {
+                            window.prepare_move(null);
+                        }
+                    },
+                    .resize => |data| {
+                        if (data.seat == seat) {
+                            window.prepare_resize(null);
+                        }
+                    }
+                }
+            } else {
+                log.debug("no window focused", .{});
             }
         },
         .pointer_enter => |data| {
