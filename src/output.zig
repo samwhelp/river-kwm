@@ -111,6 +111,19 @@ pub fn inherit_windows(self: *Self, windows: *wl.list.Head(Window, .link)) void 
 }
 
 
+pub fn remove_window(self: *Self, window: *Window) void {
+    log.debug("<{*}> remove window: {*}", .{ self, window });
+
+    std.debug.assert(window.output.? == self);
+
+    if (window == self.current_window) {
+        self.promote_new_window();
+    }
+
+    window.destroy();
+}
+
+
 pub fn promote_new_window(self: *Self) void {
     log.debug("<{*}> promote new window", .{ self });
 
