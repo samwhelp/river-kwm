@@ -7,6 +7,11 @@ const wl = wayland.client.wl;
 pub var allocator: std.mem.Allocator = undefined;
 
 
+pub inline fn init_allocator(al: *const std.mem.Allocator) void {
+    allocator = al.*;
+}
+
+
 pub fn cycle_list(
     comptime T: type,
     head: *wl.list.Link,

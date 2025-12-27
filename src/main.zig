@@ -23,7 +23,7 @@ const Globals = struct {
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}) {};
     defer if (gpa.deinit() != .ok) @panic("memory leak");
-    utils.allocator = gpa.allocator();
+    utils.init_allocator(&gpa.allocator());
 
     const display = try wl.Display.connect(null);
     defer display.disconnect();
