@@ -3,15 +3,18 @@ pub const PointerBinding = @import("binding/pointer_binding.zig");
 
 const config = @import("config.zig");
 
-const Direction = enum {};
+const MoveResizeStep = union(enum) {
+    horizontal: i32,
+    vertical: i32,
+};
 
 pub const Action = union(enum) {
     quit,
     close,
     spawn: []const []const u8,
     spawn_shell: []const u8,
-    move,
-    resize,
+    move: MoveResizeStep,
+    resize: MoveResizeStep,
     pointer_move,
     pointer_resize,
     switch_mode: config.seat.Mode,

@@ -208,6 +208,28 @@ fn handle_bindings(self: *Self) void {
             .spawn_shell => |cmd| {
                 context.spawn_shell(cmd);
             },
+            .move => |step| {
+                if (context.focused_window()) |window| {
+                    switch (step) {
+                        .horizontal => |offset| window.move(window.x+offset, null),
+                        .vertical => |offset| window.move(null, window.y+offset),
+                    }
+                }
+            },
+            .resize => |step| {
+                if (context.focused_window()) |window| {
+                    switch (step) {
+                        .horizontal => |offset| {
+                            window.move(window.x-@divFloor(offset, 2), null);
+                            window.resize(window.width+offset, null);
+                        },
+                        .vertical => |offset| {
+                            window.move(null, window.y-@divFloor(offset, 2));
+                            window.resize(null, window.height+offset);
+                        }
+                    }
+                }
+            },
             .pointer_move => {
                 if (self.window_below_pointer) |window| {
                     self.window_interaction(window);
@@ -246,7 +268,6 @@ fn handle_bindings(self: *Self) void {
                     window.toggle_tag(tag);
                 }
             },
-            else => {}
         }
     }
 }
