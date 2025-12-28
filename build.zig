@@ -34,7 +34,7 @@ pub fn build(b: *std.Build) void {
     scanner.generate("wl_compositor", 4);
     scanner.generate("wp_viewporter", 1);
     scanner.generate("wp_single_pixel_buffer_manager_v1", 1);
-    scanner.generate("river_window_manager_v1", 1);
+    scanner.generate("river_window_manager_v1", 2);
     scanner.generate("river_xkb_bindings_v1", 1);
     scanner.generate("river_layer_shell_v1", 1);
 

@@ -633,5 +633,8 @@ fn rwm_window_listener(rwm_window: *river.WindowV1, event: river.WindowV1.Event,
         .show_window_menu_requested => |data| {
             log.debug("<{*}> show window menu requested: (x: {}, y: {})", .{ window, data.x, data.y });
         },
+        .unreliable_pid => |data| {
+            log.debug("<{*}> unreliable pid: {}", .{ window, data.unreliable_pid });
+        }
     }
 }

@@ -359,6 +359,9 @@ fn rwm_seat_listener(rwm_seat: *river.SeatV1, event: river.SeatV1.Event, seat: *
 
             seat.window_below_pointer = null;
         },
+        .pointer_position => |data| {
+            log.debug("<{*}> pointer position: (x: {}, y: {})", .{ seat, data.x, data.y });
+        },
         .removed => {
             log.debug("<{*}> removed", .{ seat });
 
