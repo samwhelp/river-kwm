@@ -28,6 +28,7 @@ const Event = union(enum) {
 
 
 link: wl.list.Link = undefined,
+flink: wl.list.Link = undefined,
 
 rwm_window: *river.WindowV1,
 rwm_window_node: *river.NodeV1,
@@ -45,8 +46,7 @@ fullscreen: union(enum) {
 maximize: bool = false,
 floating: bool = false,
 
-tag: u32,
-focus_tag: u32 = 0,
+tag: u32 = 1,
 app_id: ?[]const u8 = null,
 title: ?[]const u8 = null,
 parent: ?*Self = null,
@@ -74,7 +74,7 @@ operator: union(enum) {
 } = .none,
 
 
-pub fn create(rwm_window: *river.WindowV1, tag: u32) !*Self {
+pub fn create(rwm_window: *river.WindowV1) !*Self {
     const window = try utils.allocator.create(Self);
     errdefer utils.allocator.destroy(window);
 
@@ -85,9 +85,9 @@ pub fn create(rwm_window: *river.WindowV1, tag: u32) !*Self {
     window.* = .{
         .rwm_window = rwm_window,
         .rwm_window_node = rwm_window_node,
-        .tag = tag,
     };
     window.link.init();
+    window.flink.init();
     try window.unhandled_events.append(utils.allocator, .init);
 
     rwm_window.setListener(*Self, rwm_window_listener, window);
@@ -100,12 +100,60 @@ pub fn destroy(self: *Self) void {
     defer log.debug("<{*}> destroied", .{ self });
 
     self.link.remove();
+    self.flink.remove();
     self.rwm_window.destroy();
     self.set_appid(null);
     self.set_title(null);
     self.unhandled_events.deinit(utils.allocator);
 
     utils.allocator.destroy(self);
+}
+
+
+pub fn set_output(self: *Self, output: ?*Output) void {
+    log.debug("<{*}> set output to {*}", .{ self, output });
+
+    self.output = output;
+}
+
+
+pub fn set_former_output(self: *Self, output: ?u32) void {
+    log.debug("<{*}> set former output to {?}", .{ self, output });
+
+    self.former_output = output;
+}
+
+
+pub fn set_tag(self: *Self, tag: u32) void {
+    if (tag == 0) return;
+
+    log.debug("<{*}> set tag: {b}", .{ self, tag });
+
+    self.tag = tag;
+}
+
+
+pub fn toggle_tag(self: *Self, mask: u32) void {
+    if (self.tag ^ mask == 0) return;
+
+    log.debug("<{*}> toggle tag: {b}", .{ self, mask });
+
+    self.tag ^= mask;
+}
+
+
+pub fn place(self: *Self, pos: union(enum) {
+    top,
+    bottom,
+    above: *Self,
+    below: *Self,
+}) void {
+    switch (pos) {
+        .top => self.rwm_window_node.placeTop(),
+        .bottom => self.rwm_window_node.placeBottom(),
+        .above => |window| self.rwm_window_node.placeAbove(window.rwm_window_node),
+        .below => |window| self.rwm_window_node.placeBelow(window.rwm_window_node),
+    }
 }
 
 
@@ -149,22 +197,6 @@ pub fn resize(self: *Self, width: ?i32, height: ?i32) void {
             self.output.?.height-self.y-config.window.border_width
         )
     );
-}
-
-
-pub fn focus(self: *Self) void {
-    log.debug("<{*}> focused", .{ self });
-
-    self.focus_tag |= self.output.?.main_tag;
-}
-
-
-pub fn unfocus(self: *Self) void {
-    log.debug("<{*}> unfocus", .{ self });
-
-    std.debug.assert(self.if_focused());
-
-    self.focus_tag &= ~self.output.?.main_tag;
 }
 
 
@@ -235,30 +267,20 @@ pub fn set_border(self: *Self, width: i32, rgb: u32) void {
 }
 
 
-pub inline fn orphan(self: *Self) bool {
-    return self.former_output != null;
+pub fn is_visiable(self: *Self) bool {
+    if (self.output) |output| {
+        return (self.tag & output.tag) != 0;
+    }
+    return false;
 }
 
 
-pub inline fn homeless(self: *Self) bool {
-    return self.output == null and self.former_output == null;
-}
-
-
-pub fn visiable(self: *Self, output: *Output) bool {
-    if (self.homeless()) return false;
+pub fn is_visiable_in(self: *Self, output: *Output) bool {
+    if (self.output == null) return false;
 
     if (self.output.? != output) return false;
 
     return (self.tag & output.tag) != 0;
-}
-
-
-pub fn if_focused(self: *Self) bool {
-    if (self.output) |output| {
-        return self.focus_tag & output.main_tag != 0;
-    }
-    return false;
 }
 
 
@@ -496,9 +518,6 @@ fn rwm_window_listener(rwm_window: *river.WindowV1, event: river.WindowV1.Event,
         .closed => {
             log.debug("<{*}> closed", .{ window });
 
-            if (window.output) |owner| {
-                owner.remove_window(window);
-            }
             window.destroy();
         },
         .decoration_hint => |data| {

@@ -198,7 +198,7 @@ fn handle_bindings(self: *Self) void {
                 context.rwm.stop();
             },
             .close => {
-                if (context.focused()) |window| {
+                if (context.focused_window()) |window| {
                     window.prepare_close();
                 }
             },
@@ -228,7 +228,7 @@ fn handle_bindings(self: *Self) void {
                     if (output.fullscreen_window) |window| {
                         window.prepare_unfullscreen();
                     } else {
-                        if (output.current_window) |window| {
+                        if (context.focused_window()) |window| {
                             switch (window.fullscreen) {
                                 .none => window.prepare_fullscreen(if (data.window) null else window.output.?),
                                 else => window.prepare_unfullscreen(),
@@ -248,16 +248,8 @@ fn window_interaction(self: *Self, window: *Window) void {
 
     const context = Context.get();
 
-    if (window.output.? == context.current_output.?) {
-        if (window.output.?.current_window) |win| {
-            std.debug.assert(win.if_focused());
-
-            win.unfocus();
-        }
-    }
-
     context.set_current_output(window.output.?);
-    window.focus();
+    context.focus(window);
 }
 
 
@@ -270,7 +262,7 @@ fn rwm_seat_listener(rwm_seat: *river.SeatV1, event: river.SeatV1.Event, seat: *
         .op_delta => |data| {
             log.debug("<{*}> op delta: (dx: {}, dy: {})", .{ seat, data.dx, data.dy });
 
-            const window = context.focused().?;
+            const window = context.focused_window().?;
             switch (window.operator) {
                 .none => unreachable,
                 .move => |op_data| {
@@ -294,7 +286,7 @@ fn rwm_seat_listener(rwm_seat: *river.SeatV1, event: river.SeatV1.Event, seat: *
         .op_release => {
             log.debug("<{*}> op release", .{ seat });
 
-            if (context.focused()) |window| {
+            if (context.focused_window()) |window| {
                 switch (window.operator) {
                     .none => {},
                     .move => |data| {
@@ -335,9 +327,7 @@ fn rwm_seat_listener(rwm_seat: *river.SeatV1, event: river.SeatV1.Event, seat: *
         .removed => {
             log.debug("<{*}> removed", .{ seat });
 
-            if (seat == context.current_seat) {
-                context.promote_new_seat();
-            }
+            context.prepare_remove_seat(seat);
 
             seat.destroy();
         },

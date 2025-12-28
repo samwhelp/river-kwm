@@ -34,7 +34,8 @@ current_seat: ?*Seat = null,
 outputs: wl.list.Head(Output, .link) = undefined,
 current_output: ?*Output = null,
 
-unhandled_windows: wl.list.Head(Window, .link) = undefined,
+windows: wl.list.Head(Window, .link) = undefined,
+focus_stack: wl.list.Head(Window, .flink) = undefined,
 
 mode: config.seat.Mode = .default,
 running: bool = true,
@@ -69,7 +70,8 @@ pub fn init(
     };
     ctx.?.seats.init();
     ctx.?.outputs.init();
-    ctx.?.unhandled_windows.init();
+    ctx.?.windows.init();
+    ctx.?.focus_stack.init();
 
     rwm.setListener(*Self, rwm_listener, &ctx.?);
 }
@@ -108,11 +110,12 @@ pub fn deinit() void {
     ctx.?.current_output = null;
 
     {
-        var it = ctx.?.unhandled_windows.safeIterator(.forward);
+        var it = ctx.?.windows.safeIterator(.forward);
         while (it.next()) |window| {
             window.destroy();
         }
-        ctx.?.unhandled_windows.init();
+        ctx.?.windows.init();
+        ctx.?.focus_stack.init();
     }
 
     ctx.?.env.deinit();
@@ -126,11 +129,24 @@ pub inline fn get() *Self {
 }
 
 
-pub inline fn focused(self: *Self) ?*Window {
-    return
-        if (self.current_output) |output|
-            output.current_window
-        else null;
+pub fn focus(self: *Self, window: *Window) void {
+    log.debug("<{*}> focus window: {*}", .{ self, window });
+
+    window.flink.remove();
+    self.focus_stack.prepend(window);
+}
+
+
+pub fn focused_window(self: *Self) ?*Window {
+    if (self.current_output) |output| {
+        var it = self.focus_stack.safeIterator(.forward);
+        while (it.next()) |window| {
+            if (window.is_visiable_in(output)) {
+                return window;
+            }
+        }
+    }
+    return null;
 }
 
 
@@ -139,39 +155,32 @@ pub inline fn focus_exclusive(self: *Self) bool {
 }
 
 
-pub fn promote_new_output(self: *Self) void {
-    log.debug("promote new output", .{});
+pub fn prepare_remove_output(self: *Self, output: *Output) void {
+    log.debug("prepare to remove output {*}", .{ output });
 
-    const former_output = self.current_output.?;
-    const current_output = utils.cycle_list(
-        Output,
-        &self.outputs.link,
-        &former_output.link,
-        .prev,
-    );
+    if (output == self.current_output) {
+        self.promote_new_output();
+    }
 
-    self.set_current_output(
-        if (current_output == former_output) null
-        else current_output
-    );
+    const new_output = self.current_output;
+    {
+        var it = self.windows.iterator(.forward);
+        while (it.next()) |window| {
+            if (window.output == output) {
+                window.set_former_output(output.name);
+                window.set_output(new_output);
+            }
+        }
+    }
 }
 
 
-pub fn promote_new_seat(self: *Self) void {
-    log.debug("promote new seat", .{});
+pub fn prepare_remove_seat(self: *Self, seat: *Seat) void {
+    log.debug("prepare to remove seat {*}", .{ seat });
 
-    const former_seat = self.current_seat.?;
-    const current_seat = utils.cycle_list(
-        Seat,
-        &self.seats.link,
-        &former_seat.link,
-        .prev,
-    );
-
-    self.set_current_seat(
-        if (current_seat == former_seat) null
-        else current_seat
-    );
+    if (seat == self.current_seat) {
+        self.promote_new_seat();
+    }
 }
 
 
@@ -228,6 +237,42 @@ pub inline fn spawn_shell(self: *Self, cmd: []const u8) void {
 }
 
 
+fn promote_new_output(self: *Self) void {
+    log.debug("promote new output", .{});
+
+    const former_output = self.current_output.?;
+    const current_output = utils.cycle_list(
+        Output,
+        &self.outputs.link,
+        &former_output.link,
+        .prev,
+    );
+
+    self.set_current_output(
+        if (current_output == former_output) null
+        else current_output
+    );
+}
+
+
+fn promote_new_seat(self: *Self) void {
+    log.debug("promote new seat", .{});
+
+    const former_seat = self.current_seat.?;
+    const current_seat = utils.cycle_list(
+        Seat,
+        &self.seats.link,
+        &former_seat.link,
+        .prev,
+    );
+
+    self.set_current_seat(
+        if (current_seat == former_seat) null
+        else current_seat
+    );
+}
+
+
 fn rwm_listener(rwm: *river.WindowManagerV1, event: river.WindowManagerV1.Event, context: *Self) void {
     std.debug.assert(rwm == context.rwm);
 
@@ -249,14 +294,14 @@ fn rwm_listener(rwm: *river.WindowManagerV1, event: river.WindowManagerV1.Event,
             }
 
             {
-                var it = context.outputs.safeIterator(.forward);
-                while (it.next()) |output| {
-                    output.manage();
+                var it = context.windows.safeIterator(.forward);
+                while (it.next()) |window| {
+                    window.manage();
                 }
             }
 
             if (!context.focus_exclusive()) {
-                if (context.focused()) |window| {
+                if (context.focused_window()) |window| {
                     {
                         var it = context.seats.safeIterator(.forward);
                         while (it.next()) |seat| {
@@ -271,11 +316,31 @@ fn rwm_listener(rwm: *river.WindowManagerV1, event: river.WindowManagerV1.Event,
         .render_start => {
             log.debug("render start", .{});
 
+            const focused = context.focused_window();
             {
-                var it = context.outputs.safeIterator(.forward);
-                while (it.next()) |output| {
-                    output.render();
+                var it = context.windows.safeIterator(.forward);
+                while (it.next()) |window| {
+                    if (!window.is_visiable()) {
+                        window.hide();
+                        continue;
+                    }
+
+                    window.set_border(
+                        config.window.border_width,
+                        if (!context.focus_exclusive() and window == focused)
+                            config.window.border_color.focus
+                        else config.window.border_color.unfocus
+                    );
+                    window.render();
                 }
+            }
+
+            if (focused) |window| {
+                // move focus to head of focus_stack
+                context.focus(window);
+
+                // place focused window top
+                window.place(.top);
             }
 
             rwm.renderFinish();
@@ -283,17 +348,18 @@ fn rwm_listener(rwm: *river.WindowManagerV1, event: river.WindowManagerV1.Event,
         .window => |data| {
             log.debug("new window {*}", .{ data.id });
 
-            const current_output = context.current_output orelse {
-                log.err("no current output, skip creating output for window {*}", .{ data.id });
-                return;
-            };
-
-            const window = Window.create(data.id, current_output.tag) catch |err| {
+            const window = Window.create(data.id) catch |err| {
                 log.err("create window failed: {}", .{ err });
                 return;
             };
 
-            current_output.add_window(window);
+            if (context.current_output) |output| {
+                window.set_tag(output.tag);
+                window.set_output(output);
+            }
+
+            context.windows.prepend(window);
+            context.focus(window);
         },
         .output => |data| {
             log.debug("new output {*}", .{ data.id });

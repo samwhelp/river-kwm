@@ -24,9 +24,6 @@ rwm_output: *river.OutputV1,
 rwm_layer_shell_output: ?*river.LayerShellOutputV1,
 
 tag: u32 = 1,
-main_tag: u32 = 1,
-windows: wl.list.Head(Window, .link) = undefined,
-current_window: ?*Window = null,
 fullscreen_window: ?*Window = null,
 
 name: u32 = undefined,
@@ -50,7 +47,6 @@ pub fn create(
         .rwm_layer_shell_output = rwm_layer_shell_output,
     };
     output.link.init();
-    output.windows.init();
 
     rwm_output.setListener(*Self, rwm_output_listener, output);
 
@@ -68,13 +64,6 @@ pub fn destroy(self: *Self) void {
     self.link.remove();
     self.rwm_output.destroy();
 
-    {
-        var it = self.windows.safeIterator(.forward);
-        while (it.next()) |window| {
-            window.destroy();
-        }
-    }
-
     if (self.rwm_layer_shell_output) |rwm_layer_shell_output| {
         rwm_layer_shell_output.destroy();
     }
@@ -83,143 +72,21 @@ pub fn destroy(self: *Self) void {
 }
 
 
-pub fn add_window(self: *Self, window: *Window) void {
-    log.debug("<{*}> add window: {*}", .{ self, window });
+pub fn set_tag(self: *Self, tag: u32) void {
+    if (tag == 0) return;
 
-    std.debug.assert(window.output == null);
+    log.debug("<{*}> set tag: {b}", .{ self, tag });
 
-    window.output = self;
-    window.focus();
-    if (self.current_window) |win| win.unfocus();
-    self.windows.prepend(window);
+    self.tag = tag;
 }
 
 
-pub fn inherit_windows(self: *Self, windows: *wl.list.Head(Window, .link)) void {
-    if (windows.empty()) {
-        return;
-    }
+pub fn toggle_tag(self: *Self, mask: u32) void {
+    if (self.tag ^ mask == 0) return;
 
-    log.debug("<{*}> inherit {} windows", .{ self, windows.length() });
+    log.debug("<{*}> toggle tag: (tag: {b}, mask: {b})", .{ self, self.tag, mask });
 
-    {
-        var it = windows.safeIterator(.forward);
-        while (it.next()) |window| {
-            window.output = self;
-        }
-    }
-
-    self.windows.appendList(windows);
-}
-
-
-pub fn remove_window(self: *Self, window: *Window) void {
-    log.debug("<{*}> remove window: {*}", .{ self, window });
-
-    std.debug.assert(window.output.? == self);
-
-    if (window == self.current_window) {
-        self.promote_new_window();
-    }
-    window.link.remove(); window.link.init();
-    window.output = null;
-}
-
-
-pub fn promote_new_window(self: *Self) void {
-    log.debug("<{*}> promote new window", .{ self });
-
-    const former_window = self.current_window.?;
-
-    var new_window: *Window = undefined;
-    {
-        var win = former_window;
-        while (true) {
-            new_window = utils.cycle_list(
-                Window,
-                &self.windows.link,
-                &win.link,
-                .next,
-            );
-            if (new_window.visiable(self)) {
-                break;
-            } else {
-                win = new_window;
-            }
-        }
-    }
-
-    former_window.unfocus();
-
-    if (new_window != former_window) {
-        new_window.focus();
-    }
-}
-
-
-pub fn manage(self: *Self) void {
-    self.refresh_current_window();
-
-    {
-        var it = self.windows.safeIterator(.forward);
-        while (it.next()) |window| {
-            window.manage();
-        }
-    }
-
-    log.debug("<{*}> managed", .{ self });
-}
-
-
-pub fn render(self: *Self) void {
-    defer log.debug("<{*}> rendered", .{ self });
-
-    const context = Context.get();
-    const focused = context.focused();
-    {
-        var it = self.windows.safeIterator(.forward);
-        while (it.next()) |window| {
-            if (window.visiable(self)) {
-                if (window.if_focused()) {
-                    window.rwm_window_node.placeTop();
-                }
-                window.set_border(
-                    config.window.border_width,
-                    if (!context.focus_exclusive() and window == focused)
-                        config.window.border_color.focus
-                    else config.window.border_color.unfocus
-                );
-                window.render();
-            } else {
-                window.hide();
-            }
-        }
-    }
-}
-
-
-pub fn refresh_current_window(self: *Self) void {
-    self.current_window = null;
-    {
-        var it = self.windows.safeIterator(.forward);
-        while (it.next()) |window| {
-            if (window.visiable(self) and window.if_focused()) {
-                std.debug.assert(self.current_window == null);
-                self.current_window = window;
-            }
-        }
-    }
-    if (self.current_window == null) {
-        {
-            var it = self.windows.safeIterator(.forward);
-            while (it.next()) |window| {
-                if (!window.visiable(self)) continue;
-                window.focus();
-                self.current_window = window;
-                break;
-            }
-        }
-    }
+    self.tag ^= mask;
 }
 
 
@@ -244,23 +111,7 @@ fn rwm_output_listener(rwm_output: *river.OutputV1, event: river.OutputV1.Event,
 
             const context = Context.get();
 
-            if (output == context.current_output) {
-                context.promote_new_output();
-            }
-
-            {
-                var it = output.windows.safeIterator(.forward);
-                while (it.next()) |window| {
-                    window.output = null;
-                    window.former_output = output.name;
-                }
-            }
-
-            if (context.current_output) |current_output| {
-                current_output.inherit_windows(&output.windows);
-            } else {
-                context.unhandled_windows.appendList(&output.windows);
-            }
+            context.prepare_remove_output(output);
 
             output.destroy();
         },
