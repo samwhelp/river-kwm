@@ -164,13 +164,6 @@ pub inline fn op_end(self: *Self) void {
 }
 
 
-pub inline fn focus(self: *Self, window: *Window) void {
-    log.debug("<{*}> focus {*}", .{ self, window });
-
-    self.rwm_seat.focusWindow(window.rwm_window);
-}
-
-
 pub fn manage(self: *Self) void {
     defer log.debug("<{*}> managed", .{ self });
 
@@ -185,6 +178,18 @@ pub fn manage(self: *Self) void {
     self.handle_bindings();
 
     self.rwm_seat.clearFocus();
+}
+
+
+pub fn try_focus(self: *Self) void {
+    log.debug("<{*}> try focus", .{ self });
+
+    const context = Context.get();
+
+    self.rwm_seat.clearFocus();
+    if (context.focused_window()) |window| {
+        self.rwm_seat.focusWindow(window.rwm_window);
+    }
 }
 
 

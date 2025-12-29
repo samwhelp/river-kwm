@@ -316,14 +316,10 @@ fn rwm_listener(rwm: *river.WindowManagerV1, event: river.WindowManagerV1.Event,
                 }
             }
 
-            if (!context.focus_exclusive()) {
-                if (context.focused_window()) |window| {
-                    {
-                        var it = context.seats.safeIterator(.forward);
-                        while (it.next()) |seat| {
-                            seat.focus(window);
-                        }
-                    }
+            {
+                var it = context.seats.iterator(.forward);
+                while (it.next()) |seat| {
+                    seat.try_focus();
                 }
             }
 
