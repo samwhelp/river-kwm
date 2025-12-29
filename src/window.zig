@@ -423,9 +423,11 @@ fn handle_events(self: *Self) void {
                     .ssd => self.rwm_window.useSsd(),
                 }
 
-                self.width = @divFloor(self.output.?.width, 2);
-                self.height = @divFloor(self.output.?.height, 2);
-                self.center();
+                if (self.floating) {
+                    self.width = @divFloor(self.output.?.width, 2);
+                    self.height = @divFloor(self.output.?.height, 2);
+                    self.center();
+                }
             },
             .decoration_hint => |decoration_hint| {
                 log.debug("<{*}> managing decoration hint", .{ self });
