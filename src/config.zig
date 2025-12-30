@@ -70,6 +70,17 @@ pub var layout: struct {
     }
 };
 
+fn modify_nmaster(context: *const Context, arg: *const binding.Arg) void {
+    std.debug.assert(arg.* == .i);
+
+    if (context.current_output) |output| {
+        switch (output.current_layout()) {
+            .tile => layout.tile.nmaster = @max(1, layout.tile.nmaster+arg.i),
+            else => {}
+        }
+    }
+}
+
 
 fn modify_mfact(context: *const Context, arg: *const binding.Arg) void {
     std.debug.assert(arg.* == .f);
@@ -79,6 +90,20 @@ fn modify_mfact(context: *const Context, arg: *const binding.Arg) void {
             .tile => layout.tile.mfact = @min(1, @max(0, layout.tile.mfact+arg.f)),
             .scroller => layout.scroller.mfact = @min(1, @max(0, layout.scroller.mfact+arg.f)),
             else => {},
+        }
+    }
+}
+
+
+fn modify_gap(context: *const Context, arg: *const binding.Arg) void {
+    std.debug.assert(arg.* == .i);
+
+    if (context.current_output) |output| {
+        switch (output.current_layout()) {
+            .tile => layout.tile.gap = @max(0, layout.tile.gap+arg.i),
+            .monocle => layout.monocle.gap = @max(0, layout.monocle.gap+arg.i),
+            .scroller => layout.scroller.gap = @max(0, layout.scroller.gap+arg.i),
+            .float => {},
         }
     }
 }
