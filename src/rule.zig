@@ -47,15 +47,20 @@ decoration: ?Window.Decoration = null,
 pub fn match(self: *const Self, window: *Window) bool {
     if (self.alter_match_fn) |match_fn| return match_fn(self, window);
 
-    if (self.title != null and window.title != null) {
-        log.debug("try match title: `{s}` with {*}({*}: `{s}`)", .{ window.title.?, self, &self.title.?, self.title.?.str });
+    if (self.title) |pattern| {
+        if (window.title) |title| {
+            log.debug("try match title: `{s}` with {*}({*}: `{s}`)", .{ title, self, &pattern, pattern.str });
 
-        if (!self.title.?.is_match(window.title.?)) return false;
+            if (!pattern.is_match(title)) return false;
+        } else return false;
     }
-    if (self.app_id != null and window.app_id != null) {
-        log.debug("try match app_id: `{s}` with {*}({*}: `{s}`)", .{ window.app_id.?, self, &self.app_id.?, self.app_id.?.str });
 
-        if (!self.app_id.?.is_match(window.app_id.?)) return false;
+    if (self.app_id) |pattern| {
+        if (window.app_id) |app_id| {
+            log.debug("try match app_id: `{s}` with {*}({*}: `{s}`)", .{ app_id, self, &pattern, pattern.str });
+
+            if (!pattern.is_match(app_id)) return false;
+        } else return false;
     }
 
     log.debug("<{*}> matched rule {*}", .{ window, self });
