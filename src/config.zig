@@ -18,7 +18,7 @@ const Button = struct {
     const right = 0x111;
     const middle = 0x112;
 };
-const XcusorTheme = struct {
+const XcursorTheme = struct {
     name: []const u8,
     size: u32,
 };
@@ -43,7 +43,7 @@ const BorderColor = struct {
 };
 
 
-pub const xcusor_theme: ?XcusorTheme = null;
+pub const xcursor_theme: ?XcursorTheme = null;
 
 pub const auto_swallow = true;
 

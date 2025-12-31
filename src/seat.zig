@@ -86,8 +86,8 @@ pub fn create(rwm_seat: *river.SeatV1) !*Self {
         );
     }
 
-    if (config.xcusor_theme) |xcusor_theme| {
-        rwm_seat.setXcursorTheme(xcusor_theme.name, xcusor_theme.size);
+    if (config.xcursor_theme) |xcursor_theme| {
+        rwm_seat.setXcursorTheme(xcursor_theme.name, xcursor_theme.size);
     }
 
     rwm_seat.setListener(*Self, rwm_seat_listener, seat);
