@@ -70,6 +70,7 @@ pub var layout: struct {
         .nmaster = 1,
         .mfact = 0.55,
         .gap = 10,
+        .master_location = .left,
     },
     .monocle = .{
         .gap = 10,
@@ -119,6 +120,26 @@ fn modify_gap(context: *const Context, arg: *const binding.Arg) void {
 }
 
 
+fn modify_master_location(context: *const Context, arg: *const binding.Arg) void {
+    std.debug.assert(arg.* == .ui);
+
+    if (context.current_output) |output| {
+        switch (output.current_layout()) {
+            .tile => {
+                layout.tile.master_location = switch (arg.ui) {
+                    'l' => .left,
+                    'r' => .right,
+                    'u' => .top,
+                    'd' => .bottom,
+                    else => return,
+                };
+            },
+            else => {}
+        }
+    }
+}
+
+
 pub const xkb_bindings = blk: {
     const bindings = [_]XkbBinding {
         .{
@@ -157,6 +178,26 @@ pub const xkb_bindings = blk: {
             .keysym = Keysym.h,
             .modifiers = Super,
             .action = .{ .custom_fn = .{ .func = &modify_mfact, .arg = .{ .f = -0.01 } } },
+        },
+        .{
+            .keysym = Keysym.j,
+            .modifiers = Super|Alt,
+            .action = .{ .custom_fn = .{ .func = &modify_master_location, .arg = .{ .ui = 'd' } } },
+        },
+        .{
+            .keysym = Keysym.k,
+            .modifiers = Super|Alt,
+            .action = .{ .custom_fn = .{ .func = &modify_master_location, .arg = .{ .ui = 'u' } } },
+        },
+        .{
+            .keysym = Keysym.l,
+            .modifiers = Super|Alt,
+            .action = .{ .custom_fn = .{ .func = &modify_master_location, .arg = .{ .ui = 'r' } } },
+        },
+        .{
+            .keysym = Keysym.h,
+            .modifiers = Super|Alt,
+            .action = .{ .custom_fn = .{ .func = &modify_master_location, .arg = .{ .ui = 'l' } } },
         },
         .{
             .keysym = Keysym.j,
