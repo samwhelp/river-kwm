@@ -204,6 +204,21 @@ pub fn focus_output_iter(self: *Self, direction: wl.list.Direction) void {
 }
 
 
+pub fn send_to_output(self: *Self, window: *Window, direction: wl.list.Direction) void {
+    log.debug("send {*} to {s} output", .{ window, @tagName(direction) });
+
+    if (window.output) |output| {
+        const new_output = switch (direction) {
+            .forward => utils.cycle_list(Output, &self.outputs.link, &output.link, .next),
+            .reverse => utils.cycle_list(Output, &self.outputs.link, &output.link, .prev),
+        };
+        if (new_output != output) {
+            window.set_output(new_output);
+        }
+    }
+}
+
+
 pub inline fn focus_exclusive(self: *Self) bool {
     return if (self.current_seat) |seat| seat.focus_exclusive else false;
 }

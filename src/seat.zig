@@ -268,6 +268,11 @@ fn handle_actions(self: *Self) void {
             .focus_output_iter => |data| {
                 context.focus_output_iter(data.direction);
             },
+            .send_to_output => |data| {
+                if (context.focused_window()) |window| {
+                    context.send_to_output(window, data.direction);
+                }
+            },
             .swap => |data| {
                 context.swap(data.direction);
             },

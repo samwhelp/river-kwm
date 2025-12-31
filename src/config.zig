@@ -252,6 +252,16 @@ pub const xkb_bindings = blk: {
             .action = .{ .focus_output_iter = .{ .direction = .reverse } },
         },
         .{
+            .keysym = Keysym.period,
+            .modifiers = Super|Shift,
+            .action = .{ .send_to_output = .{ .direction = .forward } },
+        },
+        .{
+            .keysym = Keysym.comma,
+            .modifiers = Super|Shift,
+            .action = .{ .send_to_output = .{ .direction = .reverse } },
+        },
+        .{
             .keysym = Keysym.f,
             .modifiers = Super,
             .action = .{ .toggle_fullscreen = .{ .in_window = true } },
