@@ -442,8 +442,6 @@ fn rwm_layer_shell_seat_listener(rwm_layer_shell_seat: *river.LayerShellSeatV1, 
         .focus_exclusive => {
             log.debug("<{*}> focus exclusive", .{ seat });
 
-            std.debug.assert(!seat.focus_exclusive);
-
             seat.focus_exclusive = true;
         },
         .focus_non_exclusive => {
@@ -451,8 +449,6 @@ fn rwm_layer_shell_seat_listener(rwm_layer_shell_seat: *river.LayerShellSeatV1, 
         },
         .focus_none => {
             log.debug("<{*}> focus none", .{ seat });
-
-            std.debug.assert(seat.focus_exclusive);
 
             seat.focus_exclusive = false;
         }
