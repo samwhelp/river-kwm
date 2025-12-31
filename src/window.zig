@@ -116,6 +116,12 @@ pub fn destroy(self: *Self) void {
     }
     self.unswallow();
 
+    // fix: after close fullscreen window, next time toggle_floating will panic for invalid pointer `output.fullscreen_window`
+    switch (self.fullscreen) {
+        .output => |output| output.fullscreen_window = null,
+        else => {}
+    }
+
     self.link.remove();
     self.flink.remove();
     self.rwm_window.destroy();
