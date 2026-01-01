@@ -358,6 +358,11 @@ pub fn spawn(self: *Self, argv: []const []const u8) void {
 
     var child = process.Child.init(argv, utils.allocator);
     child.env_map = &self.env;
+    child.cwd = switch (config.working_directory) {
+        .none => null,
+        .home => self.env.get("HOME"),
+        .custom => |dir| dir,
+    };
     child.spawn() catch |err| {
         log.err("spawn failed: {}", .{ err });
         return;

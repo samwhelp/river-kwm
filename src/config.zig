@@ -43,6 +43,12 @@ const BorderColor = struct {
 };
 
 
+pub const working_directory: union(enum) {
+    none,
+    home,
+    custom: []const u8,
+} = .home;
+
 pub const xcursor_theme: ?XcursorTheme = null;
 
 pub var auto_swallow = true;
