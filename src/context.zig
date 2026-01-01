@@ -447,7 +447,11 @@ fn rwm_listener(rwm: *river.WindowManagerV1, event: river.WindowManagerV1.Event,
             {
                 var it = context.outputs.safeIterator(.forward);
                 while (it.next()) |output| {
-                    if (output.fullscreen_window != null) continue;
+                    if (output.fullscreen_window) |window| {
+                        if (window.is_visible_in(output)) {
+                            continue;
+                        }
+                    }
                     output.manage();
                 }
             }
@@ -475,7 +479,7 @@ fn rwm_listener(rwm: *river.WindowManagerV1, event: river.WindowManagerV1.Event,
             {
                 var it = context.windows.safeIterator(.forward);
                 while (it.next()) |window| {
-                    if (!window.is_visible()) {
+                    if (!window.is_visible() or window.is_under_fullscreen_window()) {
                         window.hide();
                     }
 

@@ -353,8 +353,19 @@ pub fn is_visible(self: *Self) bool {
     if (self.output) |output| {
         return
             (self.tag & output.tag) != 0
-            and self.swallowed_by == null
-            and if (output.fullscreen_window) |window| window == self else true;
+            and self.swallowed_by == null;
+    }
+    return false;
+}
+
+
+pub fn is_under_fullscreen_window(self: *Self) bool {
+    if (self.output) |output| {
+        if (output.fullscreen_window) |window| {
+            if (window != self) {
+                return window.is_visible();
+            }
+        }
     }
     return false;
 }
