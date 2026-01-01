@@ -30,6 +30,7 @@ pub fn build(b: *std.Build) void {
     scanner.addCustomProtocol(b.path("protocol/river-window-management-v1.xml"));
     scanner.addCustomProtocol(b.path("protocol/river-xkb-bindings-v1.xml"));
     scanner.addCustomProtocol(b.path("protocol/river-layer-shell-v1.xml"));
+    scanner.addCustomProtocol(b.path("protocol/river-input-management-v1.xml"));
 
     scanner.generate("wl_compositor", 4);
     scanner.generate("wp_viewporter", 1);
@@ -37,6 +38,7 @@ pub fn build(b: *std.Build) void {
     scanner.generate("river_window_manager_v1", 2);
     scanner.generate("river_xkb_bindings_v1", 1);
     scanner.generate("river_layer_shell_v1", 1);
+    scanner.generate("river_input_manager_v1", 1);
 
     const wayland_mod = b.createModule(.{ .root_source_file = scanner.result });
     const xkbcommon_mod = b.dependency("xkbcommon", .{}).module("xkbcommon");
