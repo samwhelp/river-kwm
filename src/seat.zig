@@ -258,6 +258,7 @@ fn handle_actions(self: *Self) void {
             },
             .snap => |data| {
                 if (context.focused_window()) |window| {
+                    window.ensure_floating();
                     window.snap_to(data.edges);
                 }
             },
