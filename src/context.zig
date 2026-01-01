@@ -346,6 +346,12 @@ pub inline fn set_current_output(self: *Self, output: ?*Output) void {
     log.debug("set current output: {*}", .{ output });
 
     self.current_output = output;
+
+    if (self.current_output) |current_output| {
+        if (current_output.rwm_layer_shell_output) |rwm_layer_shell_output| {
+            rwm_layer_shell_output.setDefault();
+        }
+    }
 }
 
 
