@@ -78,7 +78,6 @@ pub fn arrange(self: *const Self, output: *Output) void {
         master_remain = @mod(usable_height, nmaster);
     }
 
-    const pad = @divFloor(self.inner_gap, 2);
     for (0.., windows.items) |i, window| {
         var x: i32 = undefined;
         var y: i32 = undefined;
@@ -86,14 +85,14 @@ pub fn arrange(self: *const Self, output: *Output) void {
         var h: i32 = undefined;
         if (i < nmaster) {
             x = 0;
-            y = (@as(i32, @intCast(i)) * master_height) + if (i > 0) master_remain + pad else 0;
-            w = if (nstack > 0) master_width - pad else master_width;
-            h = (master_height + if (i == 0) master_remain else 0) - if (nmaster > 1) pad else 0;
+            y = (@as(i32, @intCast(i)) * master_height) + if (i > 0) master_remain + self.inner_gap else 0;
+            w = if (nstack > 0) master_width - @divFloor(self.inner_gap, 2) else master_width;
+            h = (master_height + if (i == 0) master_remain else 0) - if (i > 1) self.inner_gap else 0;
         } else {
-            x = master_width + pad;
-            y = ((@as(i32, @intCast(i))-nmaster) * stack_height) + if (i > nmaster) stack_remain + pad else 0;
-            w = stack_width - pad;
-            h = (stack_height + if (i == nmaster) stack_remain else 0) - if (nstack > 1) pad else 0;
+            x = master_width + @divFloor(self.inner_gap, 2);
+            y = ((@as(i32, @intCast(i))-nmaster) * stack_height) + if (i > nmaster) stack_remain + self.inner_gap else 0;
+            w = stack_width - @divFloor(self.inner_gap, 2);
+            h = (stack_height + if (i == nmaster) stack_remain else 0) - if (i > nmaster) self.inner_gap else 0;
         }
 
         switch (self.master_location) {
