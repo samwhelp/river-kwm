@@ -161,6 +161,13 @@ pub inline fn get() *Self {
 }
 
 
+pub fn quit(self: *Self) void {
+    log.debug("quit kwm", .{});
+
+    self.running = false;
+}
+
+
 pub fn focus(self: *Self, window: *Window) void {
     log.debug("<{*}> focus window: {*}", .{ self, window });
 

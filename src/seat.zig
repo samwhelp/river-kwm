@@ -207,7 +207,7 @@ fn handle_actions(self: *Self) void {
     for (self.unhandled_actions.items) |action| {
         switch (action) {
             .quit => {
-                context.rwm.stop();
+                context.quit();
             },
             .close => {
                 if (context.focused_window()) |window| {
