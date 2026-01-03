@@ -589,7 +589,7 @@ fn rwm_listener(rwm: *river.WindowManagerV1, event: river.WindowManagerV1.Event,
             context.outputs.append(output);
 
             if (context.current_output == null) {
-                context.current_output = output;
+                context.set_current_output(output);
             }
         },
         .seat => |data| {
@@ -602,7 +602,7 @@ fn rwm_listener(rwm: *river.WindowManagerV1, event: river.WindowManagerV1.Event,
             context.seats.append(seat);
 
             if (context.current_seat == null) {
-                context.current_seat = seat;
+                context.set_current_seat(seat);
             }
         },
         .session_locked => {
