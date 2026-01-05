@@ -2,6 +2,7 @@ const Self = @This();
 
 const builtins = @import("builtin");
 const std = @import("std");
+const fmt = std.fmt;
 const mem = std.mem;
 const posix = std.posix;
 const process = std.process;
@@ -93,6 +94,15 @@ pub fn init(
         const key, const value = pair;
         ctx.?.env.put(key, value) catch |err| {
             log.warn("put (key: {s}, value: {s}) to env map failed: {}", .{ key, value, err });
+        };
+    }
+
+    if (config.xcursor_theme) |xcursor_theme| {
+        ctx.?.env.put("XCURSOR_THEME", xcursor_theme.name) catch |err| {
+            log.warn("put XCURSOR_THEME to `{s}` failed: {}", .{ xcursor_theme.name, err });
+        };
+        ctx.?.env.put("XCURSOR_SIZE", fmt.comptimePrint("{}", .{ xcursor_theme.size })) catch |err| {
+            log.warn("put XCURSOR_SIZE to `{}` failed: {}", .{ xcursor_theme.size, err });
         };
     }
 
