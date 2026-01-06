@@ -53,6 +53,7 @@ clip_state: enum {
     normal,
     cliped,
 } = .unknow,
+position_undefined: bool = false,
 
 tag: u32 = 1,
 pid: i32 = 0,
@@ -438,6 +439,10 @@ pub fn handle_events(self: *Self) void {
                     .ssd => self.rwm_window.useSsd(),
                 }
 
+                if (self.floating) {
+                    self.position_undefined = true;
+                }
+
                 const context = Context.get();
 
                 if (self.is_terminal) {
@@ -571,6 +576,11 @@ pub fn render(self: *Self) void {
         if (!self.hided) log.debug("<{*}> out of range, hided", .{ self });
         self.rwm_window.hide();
         return;
+    }
+
+    if (self.position_undefined) {
+        defer self.position_undefined = false;
+        self.center();
     }
 
     self.rwm_window_node.setPosition(
