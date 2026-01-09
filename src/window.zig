@@ -140,10 +140,11 @@ pub fn destroy(self: *Self) void {
 }
 
 
-pub fn set_output(self: *Self, output: ?*Output) void {
+pub fn set_output(self: *Self, output: ?*Output, clear_former: bool) void {
     log.debug("<{*}> set output to {*}", .{ self, output });
 
     self.output = output;
+    if (clear_former) self.set_former_output(null);
 }
 
 
