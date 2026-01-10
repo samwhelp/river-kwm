@@ -8,11 +8,21 @@ const wayland = @import("wayland");
 const wl = wayland.client.wl;
 const river = wayland.client.river;
 
-const utils = @import("utils.zig");
-const config = @import("config.zig");
+const utils = @import("utils");
+const config = @import("config");
+const Rule = @import("rule");
+
+const types = @import("types.zig");
 const Seat = @import("seat.zig");
 const Output = @import("output.zig");
 const Context = @import("context.zig");
+
+pub const Edge = enum {
+    top,
+    bottom,
+    left,
+    right,
+};
 
 const Event = union(enum) {
     init,
@@ -23,10 +33,7 @@ const Event = union(enum) {
     resize: ?*Seat,
 };
 
-pub const Decoration = enum(u1) {
-    csd,
-    ssd,
-};
+const Decoration = @TypeOf(config.default_window_decoration);
 
 
 link: wl.list.Link = undefined,
@@ -230,22 +237,16 @@ pub fn unbound_move(self: *Self, x: ?i32, y: ?i32) void {
 
 pub fn snap_to(
     self: *Self,
-    edge: river.WindowV1.Edges,
+    edge: Edge
 ) void {
     var new_x: ?i32 = null;
     var new_y: ?i32 = null;
 
-    if (edge.top) {
-        new_y = 0;
-    }
-    if (edge.bottom) {
-        new_y = self.output.?.height;
-    }
-    if (edge.left) {
-        new_x = 0;
-    }
-    if (edge.right) {
-        new_x = self.output.?.width;
+    switch (edge) {
+        .top => new_y = 0,
+        .bottom => new_y = self.output.?.height,
+        .left => new_x = 0,
+        .right => new_x = self.output.?.width,
     }
 
     self.move(new_x, new_y);
@@ -436,8 +437,8 @@ pub fn handle_events(self: *Self) void {
                 });
 
                 for (config.rules) |rule| {
-                    if (rule.match(self)) {
-                        rule.apply(self);
+                    if (rule.match(self.app_id, self.title)) {
+                        self.apply_rule(&rule);
                     }
                 }
 
@@ -746,6 +747,15 @@ fn unswallow(self: *Self) void {
         window.flink.remove();
         self.flink.insert(&window.flink);
     }
+}
+
+fn apply_rule(self: *Self, rule: *const Rule) void {
+    if (rule.tag) |tag| self.set_tag(tag);
+    if (rule.floating) |floating| self.floating = floating;
+    if (rule.decoration) |decoration| self.decoration = decoration;
+    if (rule.is_terminal) |is_terminal| self.is_terminal = is_terminal;
+    if (rule.disable_swallow) |disable_swallow| self.disable_swallow = disable_swallow;
+    if (rule.scroller_mfact) |scroller_mfact| self.scroller_mfact = scroller_mfact;
 }
 
 

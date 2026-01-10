@@ -7,8 +7,8 @@ const wl = wayland.client.wl;
 const wp = wayland.client.wp;
 const river = wayland.client.river;
 
-const utils = @import("utils.zig");
-const Context = @import("context.zig");
+const utils = @import("utils");
+const kwm = @import("kwm");
 
 const Globals = struct {
     wl_compositor: ?*wl.Compositor = null,
@@ -47,7 +47,7 @@ pub fn main() !void {
         const rwm_input_manager = globals.rwm_input_manager orelse return error.MissingRiverInputManager;
         const rwm_libinput_config = globals.rwm_libinput_config orelse return error.MissingRiverLibinputConfig;
 
-        Context.init(
+        kwm.Context.init(
             registry,
             wl_compositor,
             wp_viewporter,
@@ -59,14 +59,14 @@ pub fn main() !void {
             rwm_libinput_config,
         );
     }
-    defer Context.deinit();
+    defer kwm.Context.deinit();
 
     const wayland_fd = display.getFd();
     var poll_fds = [_]posix.pollfd {
         .{ .fd = wayland_fd, .events = posix.POLL.IN, .revents = 0 },
     };
 
-    const context = Context.get();
+    const context = kwm.Context.get();
     while (context.running) {
         _ = display.flush();
         _ = try posix.poll(&poll_fds, -1);

@@ -8,8 +8,9 @@ const wayland = @import("wayland");
 const wl = wayland.client.wl;
 const river = wayland.client.river;
 
-const utils = @import("utils.zig");
-const config = @import("config.zig");
+const utils = @import("utils");
+const config = @import("config");
+
 const InputDevice = @import("input_device.zig");
 
 

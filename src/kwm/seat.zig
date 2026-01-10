@@ -3,13 +3,13 @@ const Self = @This();
 const std = @import("std");
 const log = std.log.scoped(.seat);
 
-const xkb = @import("xkbcommon");
 const wayland = @import("wayland");
 const wl = wayland.client.wl;
 const river = wayland.client.river;
 
-const utils = @import("utils.zig");
-const config = @import("config.zig");
+const config = @import("config");
+const utils = @import("utils");
+
 const binding = @import("binding.zig");
 const Window = @import("window.zig");
 const Context = @import("context.zig");
@@ -259,7 +259,7 @@ fn handle_actions(self: *Self) void {
             .snap => |data| {
                 if (context.focused_window()) |window| {
                     window.ensure_floating();
-                    window.snap_to(data.edges);
+                    window.snap_to(data.edge);
                 }
             },
             .switch_mode => |data| {
@@ -331,7 +331,8 @@ fn handle_actions(self: *Self) void {
                 }
             },
             .custom_fn => |data| {
-                data.func(context, &data.arg);
+                const state = context.state();
+                data.func(&state, &data.arg);
             }
         }
     }

@@ -6,7 +6,9 @@ const log = std.log.scoped(.rule);
 
 const mvzr = @import("mvzr");
 
-const Window = @import("window.zig");
+const config = @import("config");
+
+const Decoration = @TypeOf(config.default_window_decoration);
 
 pub const Pattern = struct {
     str: []const u8,
@@ -37,46 +39,34 @@ pub const Pattern = struct {
 
 title: ?Pattern = null,
 app_id: ?Pattern = null,
-alter_match_fn: ?*const fn(*const Self, *const Window) bool = null,
+alter_match_fn: ?*const fn(*const Self, ?[]const u8, ?[]const u8) bool = null,
 
 tag: ?u32 = null,
 floating: ?bool = null,
-decoration: ?Window.Decoration = null,
+decoration: ?Decoration = null,
 is_terminal: ?bool = null,
 disable_swallow: ?bool = null,
 scroller_mfact: ?f32 = null,
 
 
-pub fn match(self: *const Self, window: *Window) bool {
-    if (self.alter_match_fn) |match_fn| return match_fn(self, window);
-
-    if (self.title) |pattern| {
-        if (window.title) |title| {
-            log.debug("try match title: `{s}` with {*}({*}: `{s}`)", .{ title, self, &pattern, pattern.str });
-
-            if (!pattern.is_match(title)) return false;
-        } else return false;
-    }
+pub fn match(self: *const Self, app_id: ?[]const u8, title: ?[]const u8) bool {
+    if (self.alter_match_fn) |match_fn| return match_fn(self, app_id, title);
 
     if (self.app_id) |pattern| {
-        if (window.app_id) |app_id| {
-            log.debug("try match app_id: `{s}` with {*}({*}: `{s}`)", .{ app_id, self, &pattern, pattern.str });
+        if (app_id) |appid| {
+            log.debug("try match app_id: `{s}` with {*}({*}: `{s}`)", .{ appid, self, &pattern, pattern.str });
 
-            if (!pattern.is_match(app_id)) return false;
+            if (!pattern.is_match(appid)) return false;
         } else return false;
     }
 
-    log.debug("<{*}> matched rule {*}", .{ window, self });
+    if (self.title) |pattern| {
+        if (title) |title_| {
+            log.debug("try match title: `{s}` with {*}({*}: `{s}`)", .{ title_, self, &pattern, pattern.str });
+
+            if (!pattern.is_match(title_)) return false;
+        } else return false;
+    }
 
     return true;
-}
-
-
-pub fn apply(self: *const Self, window: *Window) void {
-    if (self.tag) |tag| window.set_tag(tag);
-    if (self.floating) |floating| window.floating = floating;
-    if (self.decoration) |decoration| window.decoration = decoration;
-    if (self.is_terminal) |is_terminal| window.is_terminal = is_terminal;
-    if (self.disable_swallow) |disable_swallow| window.disable_swallow = disable_swallow;
-    if (self.scroller_mfact) |scroller_mfact| window.scroller_mfact = scroller_mfact;
 }

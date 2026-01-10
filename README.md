@@ -25,7 +25,15 @@ A window manager based on River Wayland Compositor, written in Zig
 
 **Rich window state:** swallow, maximize, fullscreen, fakefullscreen
 
-you could see all config in [config](./src/config.zig)
+## build
+
+```zig
+zig build -Dconfig=/path/to/specify/config -Doptimize=ReleaseSafe
+```
+
+It will try to find `config.zig` as config file. If not found, will use `config.def.zig` as backup.
+
+You can use `-Dconfig` to specify custom config file path, `-Doptimize` to specify build mode.
 
 ## Thanks to these reference project
 

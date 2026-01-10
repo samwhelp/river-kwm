@@ -1,3 +1,6 @@
+////////////////////////////////////////////////////////
+// Configure irrelevant part
+////////////////////////////////////////////////////////
 const std = @import("std");
 const fmt = std.fmt;
 
@@ -6,10 +9,8 @@ const Keysym = xkb.Keysym;
 const wayland = @import("wayland");
 const river = wayland.client.river;
 
-const binding = @import("binding.zig");
-const Context = @import("context.zig");
-const Rule = @import("rule.zig");
-const Window = @import("window.zig");
+const kwm = @import("kwm");
+const Rule = @import("rule");
 
 const Alt: u32 = @intFromEnum(river.SeatV1.Modifiers.Enum.mod1);
 const Super: u32 = @intFromEnum(river.SeatV1.Modifiers.Enum.mod4);
@@ -29,13 +30,13 @@ const XkbBinding = struct {
     keysym: u32,
     modifiers: u32,
     event: river.XkbBindingV1.Event = .pressed,
-    action: binding.Action,
+    action: kwm.binding.Action,
 };
 const PointerBinding = struct {
     mode: Mode = .default,
     button: u32,
     modifiers: u32,
-    action: binding.Action,
+    action: kwm.binding.Action,
     event: river.PointerBindingV1.Event = .pressed,
 };
 const BorderColor = struct {
@@ -44,21 +45,10 @@ const BorderColor = struct {
     urgent: u32,
 };
 
-const font = "FiraCode Nerd Font";
-const font_size = 15;
-const menu_font_size = 20;
-const norm_fg = 0x828bb8ff;
-const norm_bg = 0x1b1d2bd0;
-const norm_border = 0x828bb8ff;
-const sele_fg = 0x444a73ff;
-const sele_bg = 0xc8d3f5d0;
-const sele_border = 0xffc777ff;
-const menu_options = fmt.comptimePrint(
-    "-ci -l 9 -f '{s}, {}' -n {x} -N {x} -m {x} -M {x} -s {x} -S {x}",
-    .{ font, menu_font_size, norm_fg, norm_bg, norm_fg, norm_bg, sele_fg, sele_bg },
-);
-const audio_script = "$HOME/.local/bin/audio";
-const bright_script = "$HOME/.local/bin/bright";
+
+////////////////////////////////////////////////////////
+// Configure part
+////////////////////////////////////////////////////////
 
 pub const env = [_] struct { []const u8, []const u8 } {
     // .{ "key", "value" },
@@ -71,7 +61,7 @@ pub const working_directory: union(enum) {
 } = .home;
 
 pub const startup_cmds = [_][]const []const u8 {
-    &[_][]const u8 { "sh", "-c", "$HOME/.local/bin/swaybgd" },
+    // &[_][]const u8 { "swaybg", "-i", "/path/to/wallpaper" },
 };
 
 pub const xcursor_theme: ?XcursorTheme = null;
@@ -82,29 +72,26 @@ pub const scroll_factor = 1.0;
 
 pub const sloppy_focus = false;
 
-pub const default_window_decoration: Window.Decoration = .ssd;
 pub var auto_swallow = true;
 
-pub const Mode = enum {
-    lock, // do not delete, compile needed
-    default,
-    floating,
-    passthrough,
-};
+pub const default_window_decoration: enum {
+    csd,
+    ssd,
+} = .ssd;
 
 pub var border_width: i32 = 5;
 pub const border_color: BorderColor = .{
-    .focus = sele_border,
-    .unfocus = norm_border,
+    .focus = 0xffc777ff,
+    .unfocus = 0x828bb8ff,
     .urgent = 0xff0000ff,
 };
 
 
-pub const default_layout: @import("layout.zig").Type = .scroller;
+pub const default_layout: kwm.layout.Type = .tile;
 pub var layout: struct {
-    tile: @import("layout/tile.zig"),
-    monocle: @import("layout/monocle.zig"),
-    scroller: @import("layout/scroller.zig"),
+    tile: kwm.layout.tile,
+    monocle: kwm.layout.monocle,
+    scroller: kwm.layout.scroller,
 } = .{
     .tile = .{
         .nmaster = 1,
@@ -124,23 +111,20 @@ pub var layout: struct {
     }
 };
 
-fn modify_nmaster(context: *const Context, arg: *const binding.Arg) void {
+fn modify_nmaster(state: *const kwm.State, arg: *const kwm.binding.Arg) void {
     std.debug.assert(arg.* == .i);
 
-    if (context.current_output) |output| {
-        switch (output.current_layout()) {
-            .tile => layout.tile.nmaster = @max(1, layout.tile.nmaster+arg.i),
-            else => {}
-        }
+    if (state.layout == .tile) {
+        layout.tile.nmaster = @max(1, layout.tile.nmaster+arg.i);
     }
 }
 
 
-fn modify_mfact(context: *const Context, arg: *const binding.Arg) void {
+fn modify_mfact(state: *const kwm.State, arg: *const kwm.binding.Arg) void {
     std.debug.assert(arg.* == .f);
 
-    if (context.current_output) |output| {
-        switch (output.current_layout()) {
+    if (state.layout) |layout_t| {
+        switch (layout_t) {
             .tile => layout.tile.mfact = @min(1, @max(0, layout.tile.mfact+arg.f)),
             .scroller => layout.scroller.mfact = @min(1, @max(0, layout.scroller.mfact+arg.f)),
             else => {},
@@ -149,11 +133,11 @@ fn modify_mfact(context: *const Context, arg: *const binding.Arg) void {
 }
 
 
-fn modify_gap(context: *const Context, arg: *const binding.Arg) void {
+fn modify_gap(state: *const kwm.State, arg: *const kwm.binding.Arg) void {
     std.debug.assert(arg.* == .i);
 
-    if (context.current_output) |output| {
-        switch (output.current_layout()) {
+    if (state.layout) |layout_t| {
+        switch (layout_t) {
             .tile => layout.tile.inner_gap = @max(border_width*2, layout.tile.inner_gap+arg.i),
             .monocle => layout.monocle.gap = @max(border_width*2, layout.monocle.gap+arg.i),
             .scroller => layout.scroller.inner_gap = @max(border_width*2, layout.scroller.inner_gap+arg.i),
@@ -163,44 +147,41 @@ fn modify_gap(context: *const Context, arg: *const binding.Arg) void {
 }
 
 
-fn modify_master_location(context: *const Context, arg: *const binding.Arg) void {
+fn modify_master_location(state: *const kwm.State, arg: *const kwm.binding.Arg) void {
     std.debug.assert(arg.* == .ui);
 
-    if (context.current_output) |output| {
-        switch (output.current_layout()) {
-            .tile => {
-                layout.tile.master_location = switch (arg.ui) {
-                    'l' => .left,
-                    'r' => .right,
-                    'u' => .top,
-                    'd' => .bottom,
-                    else => return,
-                };
-            },
-            else => {}
-        }
+    if (state.layout == .tile) {
+        layout.tile.master_location = switch (arg.ui) {
+            'l' => .left,
+            'r' => .right,
+            'u' => .top,
+            'd' => .bottom,
+            else => return,
+        };
     }
 }
 
 
-fn toggle_scroller_snap_to_left(context: *const Context, arg: *const binding.Arg) void {
+fn toggle_scroller_snap_to_left(state: *const kwm.State, arg: *const kwm.binding.Arg) void {
     std.debug.assert(arg.* == .none);
 
-    if (context.current_output) |output| {
-        switch (output.current_layout()) {
-            .scroller => {
-                layout.scroller.snap_to_left = !layout.scroller.snap_to_left;
-            },
-            else => {}
-        }
+    if (state.layout == .scroller) {
+        layout.scroller.snap_to_left = !layout.scroller.snap_to_left;
     }
 }
 
 
-fn toggle_auto_swallow(_: *const Context, _: *const binding.Arg) void {
+fn toggle_auto_swallow(_: *const kwm.State, _: *const kwm.binding.Arg) void {
     auto_swallow = !auto_swallow;
 }
 
+
+pub const Mode = enum {
+    lock, // do not delete, compile needed
+    default,
+    floating,
+    passthrough,
+};
 
 pub const xkb_bindings = blk: {
     const bindings = [_]XkbBinding {
@@ -282,25 +263,25 @@ pub const xkb_bindings = blk: {
             .mode = .floating,
             .keysym = Keysym.l,
             .modifiers = Super|Shift,
-            .action = .{ .snap = .{ .edges = .{ .right = true } } }
+            .action = .{ .snap = .{ .edge = .right } }
         },
         .{
             .mode = .floating,
             .keysym = Keysym.h,
             .modifiers = Super|Shift,
-            .action = .{ .snap = .{ .edges = .{ .left = true } } }
+            .action = .{ .snap = .{ .edge = .left } }
         },
         .{
             .mode = .floating,
             .keysym = Keysym.j,
             .modifiers = Super|Shift,
-            .action = .{ .snap = .{ .edges = .{ .bottom = true } } }
+            .action = .{ .snap = .{ .edge = .bottom } }
         },
         .{
             .mode = .floating,
             .keysym = Keysym.k,
             .modifiers = Super|Shift,
-            .action = .{ .snap = .{ .edges = .{ .top = true } } }
+            .action = .{ .snap = .{ .edge = .top } }
         },
 
 
@@ -483,131 +464,12 @@ pub const xkb_bindings = blk: {
         .{
             .keysym = Keysym.p,
             .modifiers = Super,
-            .action = .{ .spawn_shell = .{ .cmd = fmt.comptimePrint("wmenu-run {s}", .{ menu_options }) } },
+            .action = .{ .spawn_shell = .{ .cmd = "wmenu-run" } },
         },
         .{
             .keysym = Keysym.Return,
             .modifiers = Super|Shift,
-            .action = .{ .spawn = .{ .argv = &[_][]const u8 { "footclient" } } },
-        },
-        .{
-            .keysym = Keysym.e,
-            .modifiers = Super,
-            .action = .{ .spawn = .{ .argv = &[_][]const u8 { "footclient", "lf" } } },
-        },
-        .{
-            .keysym = Keysym.l,
-            .modifiers = Super|Shift,
-            .action = .{ .spawn = .{ .argv = &[_][]const u8 { "wayland_lock" } } },
-        },
-        .{
-            .keysym = Keysym.Print,
-            .modifiers = 0,
-            .action = .{ .spawn_shell = .{ .cmd = "grim -| wl-copy && notify-send 'Screenshot taken'" } },
-        },
-        .{
-            .keysym = Keysym.s,
-            .modifiers = Super|Shift,
-            .action = .{ .spawn_shell = .{ .cmd = "sleep 0.2; slurp | xargs -I {} grim -g {} -| wl-copy" } },
-        },
-        .{
-            .keysym = Keysym.k,
-            .modifiers = Super|Ctrl|Shift,
-            .action = .{
-                .spawn_shell = .{
-                    .cmd = fmt.comptimePrint(
-                        "if pgrep -x wshowkeys > /dev/null; then killall wshowkeys; else wshowkeys -b {x} -f {x} -F '{s} 60' -a bottom -m 60; fi",
-                        .{ norm_fg, norm_bg, font }
-                    ),
-                },
-            },
-        },
-        .{
-            .keysym = Keysym.v,
-            .modifiers = Super,
-            .action = .{
-                .spawn_shell = .{
-                    .cmd = fmt.comptimePrint(
-                        "cliphist list | wmenu {s} | {{ read -r selection; [ -n \"$selection\" ] && echo \"$selection\" | cliphist decode | wl-copy; }}",
-                        .{ menu_options },
-                    ),
-                },
-            },
-        },
-        .{
-            .keysym = Keysym.v,
-            .modifiers = Super|Shift,
-            .action = .{
-                .spawn_shell = .{
-                    .cmd = fmt.comptimePrint(
-                        "cliphist list | wmenu {s} | cliphist delete",
-                        .{ menu_options },
-                    ),
-                },
-            },
-        },
-        .{
-            .keysym = Keysym.Caps_Lock,
-            .modifiers = 0,
-            .action = .{
-                .spawn_shell = .{ .cmd = "sleep 0.2; $HOME/.local/bin/capslock" },
-            },
-        },
-        .{
-            .keysym = Keysym.XF86AudioRaiseVolume,
-            .modifiers = 0,
-            .action = .{
-                .spawn_shell = .{ .cmd = fmt.comptimePrint("{s} sink --plus", .{ audio_script }) },
-            },
-        },
-        .{
-            .keysym = Keysym.XF86AudioLowerVolume,
-            .modifiers = 0,
-            .action = .{
-                .spawn_shell = .{ .cmd = fmt.comptimePrint("{s} sink --minus", .{ audio_script }) },
-            },
-        },
-        .{
-            .keysym = Keysym.XF86AudioMute,
-            .modifiers = 0,
-            .action = .{
-                .spawn_shell = .{ .cmd = fmt.comptimePrint("{s} sink --mute", .{ audio_script }) },
-            },
-        },
-        .{
-            .keysym = Keysym.XF86AudioRaiseVolume,
-            .modifiers = Super,
-            .action = .{
-                .spawn_shell = .{ .cmd = fmt.comptimePrint("{s} source --plus", .{ audio_script }) },
-            },
-        },
-        .{
-            .keysym = Keysym.XF86AudioLowerVolume,
-            .modifiers = Super,
-            .action = .{
-                .spawn_shell = .{ .cmd = fmt.comptimePrint("{s} source --minus", .{ audio_script }) },
-            },
-        },
-        .{
-            .keysym = Keysym.XF86AudioMute,
-            .modifiers = Super,
-            .action = .{
-                .spawn_shell = .{ .cmd = fmt.comptimePrint("{s} source --mute", .{ audio_script }) },
-            },
-        },
-        .{
-            .keysym = Keysym.XF86MonBrightnessUp,
-            .modifiers = 0,
-            .action = .{
-                .spawn_shell = .{ .cmd = fmt.comptimePrint("{s} --plus", .{ bright_script }) },
-            },
-        },
-        .{
-            .keysym = Keysym.XF86MonBrightnessDown,
-            .modifiers = 0,
-            .action = .{
-                .spawn_shell = .{ .cmd = fmt.comptimePrint("{s} --minus", .{ bright_script }) },
-            },
+            .action = .{ .spawn = .{ .argv = &[_][]const u8 { "foot" } } },
         },
     };
 
@@ -653,8 +515,8 @@ pub const pointer_bindings = [_]PointerBinding {
 };
 
 
-fn empty_appid_or_title(_: *const Rule, window: *const Window) bool {
-    return window.app_id == null or window.app_id.?.len == 0 or window.title == null or window.title.?.len == 0;
+fn empty_appid_or_title(_: *const Rule, app_id: ?[]const u8, title: ?[]const u8) bool {
+    return app_id == null or app_id.?.len == 0 or title == null or title.?.len == 0;
 }
 pub const rules = [_]Rule {
     //  support regex by: https://github.com/mnemnion/mvzr
@@ -676,16 +538,7 @@ pub const rules = [_]Rule {
     .{ .app_id = .{ .str = "DesktopEditors" }, .floating = true },
     .{ .app_id = .{ .str = "xdg-desktop-portal-gtk" }, .floating = true },
     .{ .app_id = .{ .str = "chromium" }, .tag = 1 << 1, .scroller_mfact = 0.9 },
-    .{ .app_id = .{ .str = "QQ" }, .tag = 1 << 2, .floating = true },
-    .{ .app_id = .{ .str = "wemeetapp" }, .tag = 1 << 2, .floating = true },
-    .{ .app_id = .{ .str = "wechat" }, .tag = 1 << 2, .floating = true },
-    .{ .app_id = .{ .str = "virt-manager" }, .floating = true },
-    .{ .app_id = .{ .str = "Zotero" }, .floating = true },
-    .{ .app_id = .{ .str = "stalonetray" }, .floating = true },
-    .{ .app_id = .{ .str = "lazarus" }, .floating = true },
-    .{ .app_id = .{ .str = "ONLYOFFICE" }, .floating = true },
     .{ .app_id = .{ .str = "foot" }, .is_terminal = true, .scroller_mfact = 0.8 },
-    .{ .app_id = .{ .str = "footclient" }, .is_terminal = true, .scroller_mfact = 0.8 },
 };
 
 // libinput config

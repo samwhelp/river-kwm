@@ -1,4 +1,5 @@
 const std = @import("std");
+const fs = std.fs;
 
 const wayland = @import("wayland");
 
@@ -47,6 +48,51 @@ pub fn build(b: *std.Build) void {
     const xkbcommon_mod = b.dependency("xkbcommon", .{}).module("xkbcommon");
     const mvzr_mod = b.dependency("mvzr", .{}).module("mvzr");
 
+    const utils_mod = b.createModule(.{
+        .root_source_file = b.path("src/utils.zig"),
+        .imports = &.{
+            .{ .name = "wayland", .module = wayland_mod },
+        }
+    });
+    const rule_mod = b.createModule(.{
+        .root_source_file = b.path("src/rule.zig"),
+        .imports = &.{
+            .{ .name = "mvzr", .module = mvzr_mod },
+        },
+    });
+    const kwm_mod = b.createModule(.{
+        .root_source_file = b.path("src/kwm.zig"),
+        .imports = &.{
+            .{ .name = "wayland", .module = wayland_mod },
+
+            .{ .name = "utils", .module = utils_mod },
+            .{ .name = "rule", .module = rule_mod },
+        },
+    });
+
+    const config_path = b.option([]const u8, "config", "path to config file") orelse "config.zig";
+    const backup_config_path = "config.def.zig";
+    const config_mod = b.createModule(.{
+        .root_source_file = blk: {
+            fs.cwd().access(config_path, .{}) catch |err| {
+                std.log.err("access config file `{s}` failed: {}, use `{s}`", .{ config_path, err, backup_config_path });
+                break :blk b.path(backup_config_path);
+            };
+            break :blk b.path(config_path);
+        },
+        .imports = &.{
+            .{ .name = "wayland", .module = wayland_mod },
+            .{ .name = "xkbcommon", .module = xkbcommon_mod },
+
+            .{ .name = "utils", .module = utils_mod },
+            .{ .name = "rule", .module = rule_mod },
+            .{ .name = "kwm", .module = kwm_mod },
+        },
+    });
+
+    rule_mod.addImport("config", config_mod);
+    kwm_mod.addImport("config", config_mod);
+
     // Here we define an executable. An executable needs to have a root module
     // which needs to expose a `main` function. While we could add a main function
     // to the module defined above, it's sometimes preferable to split business
@@ -80,8 +126,9 @@ pub fn build(b: *std.Build) void {
             // root module.
             .imports = &.{
                 .{ .name = "wayland", .module = wayland_mod },
-                .{ .name = "xkbcommon", .module = xkbcommon_mod },
-                .{ .name = "mvzr", .module = mvzr_mod },
+
+                .{ .name = "utils", .module = utils_mod },
+                .{ .name = "kwm", .module = kwm_mod },
             },
 
             .link_libc = true,

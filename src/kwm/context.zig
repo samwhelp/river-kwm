@@ -13,8 +13,10 @@ const wl = wayland.client.wl;
 const wp = wayland.client.wp;
 const river = wayland.client.river;
 
-const utils = @import("utils.zig");
-const config = @import("config.zig");
+const utils = @import("utils");
+const config = @import("config");
+
+const types = @import("types.zig");
 const Seat = @import("seat.zig");
 const Output = @import("output.zig");
 const Window = @import("window.zig");
@@ -209,6 +211,17 @@ pub inline fn get() *Self {
 }
 
 
+pub fn state(self: *Self) types.State {
+    const layout =
+        if (self.current_output) |output|
+            output.current_layout()
+        else null;
+    return .{
+        .layout = layout,
+    };
+}
+
+
 pub fn quit(self: *Self) void {
     log.debug("quit kwm", .{});
 
@@ -243,7 +256,7 @@ pub fn focused_window(self: *Self) ?*Window {
 }
 
 
-pub fn focus_iter(self: *Self, direction: wl.list.Direction, skip_floating: bool) void {
+pub fn focus_iter(self: *Self, direction: types.Direction, skip_floating: bool) void {
     log.debug("focus iter: {s}", .{ @tagName(direction) });
 
     if (self.focused_window()) |window| {
@@ -277,7 +290,7 @@ pub fn focus_top_in(self: *Self, output: *Output, skip_floating: bool) ?*Window 
 }
 
 
-pub fn focus_output_iter(self: *Self, direction: wl.list.Direction) void {
+pub fn focus_output_iter(self: *Self, direction: types.Direction) void {
     log.debug("focus output iter: {s}", .{ @tagName(direction) });
 
     if (self.current_output) |output| {
@@ -292,7 +305,7 @@ pub fn focus_output_iter(self: *Self, direction: wl.list.Direction) void {
 }
 
 
-pub fn send_to_output(self: *Self, window: *Window, direction: wl.list.Direction) void {
+pub fn send_to_output(self: *Self, window: *Window, direction: types.Direction) void {
     log.debug("send {*} to {s} output", .{ window, @tagName(direction) });
 
     if (window.output) |output| {
@@ -312,7 +325,7 @@ pub inline fn focus_exclusive(self: *Self) bool {
 }
 
 
-pub fn swap(self: *Self, direction: wl.list.Direction) void {
+pub fn swap(self: *Self, direction: types.Direction) void {
     log.debug("swap window: {s}", .{ @tagName(direction) });
 
     if (self.focused_window()) |window| {

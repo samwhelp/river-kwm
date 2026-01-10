@@ -9,11 +9,12 @@ const wayland = @import("wayland");
 const wl = wayland.client.wl;
 const river = wayland.client.river;
 
-const utils = @import("utils.zig");
-const config = @import("config.zig");
+const utils = @import("utils");
+const config = @import("config");
+
+const layout = @import("layout.zig");
 const Context = @import("context.zig");
 const Window = @import("window.zig");
-const layout = @import("layout.zig");
 
 
 link: wl.list.Link = undefined,

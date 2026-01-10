@@ -1,13 +1,12 @@
-const wayland = @import("wayland");
-const river = wayland.client.river;
-const wl = wayland.client.wl;
+const config = @import("config");
+
+const types = @import("types.zig");
+const layout = @import("layout.zig");
+const Context = @import("context.zig");
+const Window = @import("window.zig");
 
 pub const XkbBinding = @import("binding/xkb_binding.zig");
 pub const PointerBinding = @import("binding/pointer_binding.zig");
-
-const config = @import("config.zig");
-const layout = @import("layout.zig");
-const Context = @import("context.zig");
 
 const MoveResizeStep = union(enum) {
     horizontal: i32,
@@ -22,6 +21,7 @@ pub const Arg = union(enum) {
     v: []const []const u8,
 };
 
+
 pub const Action = union(enum) {
     quit,
     close,
@@ -32,17 +32,17 @@ pub const Action = union(enum) {
         cmd: []const u8,
     },
     focus_iter: struct {
-        direction: wl.list.Direction,
+        direction: types.Direction,
         skip_floating: bool = false,
     },
     focus_output_iter: struct {
-        direction: wl.list.Direction,
+        direction: types.Direction,
     },
     send_to_output: struct {
-        direction: wl.list.Direction,
+        direction: types.Direction,
     },
     swap: struct {
-        direction: wl.list.Direction,
+        direction: types.Direction,
     },
     move: struct {
         step: MoveResizeStep,
@@ -53,7 +53,7 @@ pub const Action = union(enum) {
     pointer_move,
     pointer_resize,
     snap: struct {
-        edges: river.WindowV1.Edges,
+        edge: Window.Edge,
     },
     switch_mode: struct {
         mode: config.Mode,
@@ -72,6 +72,6 @@ pub const Action = union(enum) {
     switch_layout: struct { layout: layout.Type },
     custom_fn: struct {
         arg: Arg,
-        func: *const fn(*const Context, *const Arg) void,
+        func: *const fn(*const types.State, *const Arg) void,
     },
 };
