@@ -35,6 +35,10 @@ It will try to find `config.zig` as config file. If not found, will use `config.
 
 You can use `-Dconfig` to specify custom config file path, `-Doptimize` to specify build mode.
 
+## configuration
+
+`cp config.def.zig config.zig` to create your own config file, and make custom modifications in `config.zig`.
+
 ## Thanks to these reference project
 
 - https://github.com/riverwm/river - River Wayland compositor
