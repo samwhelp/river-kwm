@@ -718,7 +718,10 @@ fn rwm_libinput_config_listener(rwm_libinput_config: *river.LibinputConfigV1, ev
 fn signal_handler(sig: c_int) callconv(.c) void {
     if (sig == posix.SIG.CHLD) {
         while (true) {
-            const res = posix.waitpid(-1, posix.W.NOHANG);
+            const res = utils.waitpid(-1, posix.W.NOHANG) catch |err| {
+                log.warn("wait failed: {}", .{ err });
+                break;
+            };
             if (res.pid <= 0) break;
             log.debug("wait pid {}", .{ res.pid });
         }

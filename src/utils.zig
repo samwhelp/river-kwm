@@ -1,7 +1,9 @@
+const builtins = @import("builtin");
 const std = @import("std");
 const fs = std.fs;
 const fmt = std.fmt;
 const mem = std.mem;
+const posix = std.posix;
 const process = std.process;
 
 const wayland = @import("wayland");
@@ -66,3 +68,23 @@ pub fn parent_pid(pid: i32) i32 {
 
     return fmt.parseInt(i32, ppid_str, 10) catch return 0;
 }
+
+
+pub fn waitpid(pid: posix.pid_t, flags: u32) !posix.WaitPidResult {
+    var status: if (builtins.link_libc) c_int else u32 = undefined;
+    while (true) {
+        const rc = posix.system.waitpid(pid, &status, @intCast(flags));
+        const err = posix.errno(rc);
+        switch (err) {
+            .SUCCESS => return .{
+                .pid = @intCast(rc),
+                .status = @bitCast(status),
+            },
+            .INTR => continue,
+            .CHILD => return error.ChildProcessDoesNotExist,
+            .INVAL => return error.InvalidWaitpidFlags,
+            else => return posix.unexpectedErrno(err),
+        }
+    }
+}
+
