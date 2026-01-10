@@ -18,6 +18,7 @@ const layout = @import("layout.zig");
 
 link: wl.list.Link = undefined,
 
+wl_output: ?*wl.Output = null,
 rwm_output: *river.OutputV1,
 rwm_layer_shell_output: ?*river.LayerShellOutputV1,
 
@@ -28,7 +29,7 @@ prev_main_tag: u32 = 1,
 layout_tag: [32]layout.Type = .{ config.default_layout } ** 32,
 fullscreen_window: ?*Window = null,
 
-name: u32 = undefined,
+name: ?[]const u8 = null,
 x: i32 = undefined,
 y: i32 = undefined,
 width: i32 = undefined,
@@ -63,6 +64,8 @@ pub fn create(
 pub fn destroy(self: *Self) void {
     defer log.debug("<{*}> destroied", .{ self });
 
+    self.set_name(null);
+
     if (self.fullscreen_window) |window| {
         window.prepare_unfullscreen();
         self.fullscreen_window = null;
@@ -70,6 +73,7 @@ pub fn destroy(self: *Self) void {
 
     self.link.remove();
     self.rwm_output.destroy();
+    if (self.wl_output) |wl_output| wl_output.destroy();
 
     if (self.rwm_layer_shell_output) |rwm_layer_shell_output| {
         rwm_layer_shell_output.destroy();
@@ -143,6 +147,18 @@ pub fn manage(self: *Self) void {
 }
 
 
+fn set_name(self: *Self, name: ?[]const u8) void {
+    if (self.name) |name_| {
+        utils.allocator.free(name_);
+        self.name = null;
+    }
+
+    if (name) |name_| {
+        self.name = utils.allocator.dupe(u8, name_) catch null;
+    }
+}
+
+
 fn rwm_output_listener(rwm_output: *river.OutputV1, event: river.OutputV1.Event, output: *Self) void {
     std.debug.assert(rwm_output == output.rwm_output);
 
@@ -160,7 +176,7 @@ fn rwm_output_listener(rwm_output: *river.OutputV1, event: river.OutputV1.Event,
             output.y = data.y;
         },
         .removed => {
-            log.debug("<{*}> removed, name: {}", .{ output, output.name });
+            log.debug("<{*}> removed, name: {s}", .{ output, output.name orelse "" });
 
             const context = Context.get();
 
@@ -171,7 +187,10 @@ fn rwm_output_listener(rwm_output: *river.OutputV1, event: river.OutputV1.Event,
         .wl_output => |data| {
             log.debug("<{*}> wl_output: {}", .{ output, data.name });
 
-            output.name = data.name;
+            const context = Context.get();
+            const wl_output = context.wl_registry.bind(data.name, wl.Output, 4) catch return;
+            output.wl_output = wl_output;
+            wl_output.setListener(*Self, wl_output_listener, output);
         },
     }
 }
@@ -196,5 +215,33 @@ fn rwm_layer_shell_output_listener(
             output.x = data.x;
             output.y = data.y;
         },
+    }
+}
+
+
+fn wl_output_listener(wl_output: *wl.Output, event: wl.Output.Event, output: *Self) void {
+    std.debug.assert(wl_output == output.wl_output.?);
+
+    switch (event) {
+        .name => |data| {
+            log.debug("<{*}> name: {s}", .{ output, data.name });
+
+            const name = mem.span(data.name);
+            output.set_name(name);
+
+            const context = Context.get();
+            {
+                var it = context.windows.safeIterator(.forward);
+                while (it.next()) |window| {
+                    if (window.former_output) |former| {
+                        if (mem.eql(u8, former, name)) {
+                            log.debug("{*} former output match `{s}`", .{ window, name });
+                            window.set_output(output, true);
+                        }
+                    }
+                }
+            }
+        },
+        else => {}
     }
 }

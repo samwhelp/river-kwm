@@ -48,6 +48,7 @@ pub fn main() !void {
         const rwm_libinput_config = globals.rwm_libinput_config orelse return error.MissingRiverLibinputConfig;
 
         Context.init(
+            registry,
             wl_compositor,
             wp_viewporter,
             wp_single_pixel_buffer_manager,

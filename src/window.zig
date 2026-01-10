@@ -36,7 +36,7 @@ rwm_window: *river.WindowV1,
 rwm_window_node: *river.NodeV1,
 
 output: ?*Output = null,
-former_output: ?u32 = null,
+former_output: ?[]const u8 = null,
 
 unhandled_events: std.ArrayList(Event) = undefined,
 
@@ -116,6 +116,8 @@ pub fn create(rwm_window: *river.WindowV1) !*Self {
 pub fn destroy(self: *Self) void {
     defer log.debug("<{*}> destroied", .{ self });
 
+    self.set_former_output(null);
+
     if (self.is_terminal) {
         const context = Context.get();
         context.unregister_terminal(self);
@@ -148,10 +150,20 @@ pub fn set_output(self: *Self, output: ?*Output, clear_former: bool) void {
 }
 
 
-pub fn set_former_output(self: *Self, output: ?u32) void {
-    log.debug("<{*}> set former output to {?}", .{ self, output });
+pub fn set_former_output(self: *Self, output: ?[]const u8) void {
+    log.debug("<{*}> set former output to `{s}`", .{ self, output orelse "" });
 
-    self.former_output = output;
+    if (self.former_output) |name| {
+        utils.allocator.free(name);
+        self.former_output = null;
+    }
+
+    if (output) |name| {
+        self.former_output = utils.allocator.dupe(u8, name) catch |err| {
+            log.err("dupe {s} failed: {}", .{ name, err });
+            return;
+        };
+    }
 }
 
 

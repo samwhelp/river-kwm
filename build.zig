@@ -34,6 +34,7 @@ pub fn build(b: *std.Build) void {
     scanner.addCustomProtocol(b.path("protocol/river-libinput-config-v1.xml"));
 
     scanner.generate("wl_compositor", 4);
+    scanner.generate("wl_output", 4);
     scanner.generate("wp_viewporter", 1);
     scanner.generate("wp_single_pixel_buffer_manager_v1", 1);
     scanner.generate("river_window_manager_v1", 2);

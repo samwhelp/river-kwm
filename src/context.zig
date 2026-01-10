@@ -24,6 +24,7 @@ const LibinputDevice = @import("libinput_device.zig");
 var ctx: ?Self = null;
 
 
+wl_registry: *wl.Registry,
 wl_compositor: *wl.Compositor,
 wp_viewporter: *wp.Viewporter,
 wp_single_pixel_buffer_manager: *wp.SinglePixelBufferManagerV1,
@@ -54,6 +55,7 @@ startup_processes: [config.startup_cmds.len]?process.Child = undefined,
 
 
 pub fn init(
+    wl_registry: *wl.Registry,
     wl_compositor: *wl.Compositor,
     wp_viewporter: *wp.Viewporter,
     wp_single_pixel_buffer_manager: *wp.SinglePixelBufferManagerV1,
@@ -69,6 +71,7 @@ pub fn init(
     log.info("init context", .{});
 
     ctx = .{
+        .wl_registry = wl_registry,
         .wl_compositor = wl_compositor,
         .wp_viewporter = wp_viewporter,
         .wp_single_pixel_buffer_manager = wp_single_pixel_buffer_manager,
@@ -130,6 +133,7 @@ pub fn deinit() void {
 
     defer ctx = null;
 
+    ctx.?.wl_registry.destroy();
     ctx.?.wl_compositor.destroy();
     ctx.?.wp_viewporter.destroy();
     ctx.?.wp_single_pixel_buffer_manager.destroy();
