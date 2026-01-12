@@ -17,6 +17,11 @@ const Seat = @import("seat.zig");
 const Output = @import("output.zig");
 const Context = @import("context.zig");
 
+pub const Decoration = enum {
+    csd,
+    ssd,
+};
+
 pub const Edge = enum {
     top,
     bottom,
@@ -32,8 +37,6 @@ const Event = union(enum) {
     move: ?*Seat,
     resize: ?*Seat,
 };
-
-const Decoration = @TypeOf(config.default_window_decoration);
 
 
 link: wl.list.Link = undefined,

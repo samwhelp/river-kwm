@@ -102,7 +102,7 @@ pub fn build(b: *std.Build) void {
         },
     });
 
-    rule_mod.addImport("config", config_mod);
+    rule_mod.addImport("kwm", kwm_mod);
     kwm_mod.addImport("config", config_mod);
 
     // Here we define an executable. An executable needs to have a root module

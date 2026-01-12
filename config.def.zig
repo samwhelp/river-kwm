@@ -74,10 +74,7 @@ pub const sloppy_focus = false;
 
 pub var auto_swallow = true;
 
-pub const default_window_decoration: enum {
-    csd,
-    ssd,
-} = .ssd;
+pub const default_window_decoration: kwm.WindowDecoration = .ssd;
 
 pub var border_width: i32 = 5;
 pub const border_color: BorderColor = .{

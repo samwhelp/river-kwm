@@ -6,9 +6,7 @@ const log = std.log.scoped(.rule);
 
 const mvzr = @import("mvzr");
 
-const config = @import("config");
-
-const Decoration = @TypeOf(config.default_window_decoration);
+const kwm = @import("kwm");
 
 pub const Pattern = struct {
     str: []const u8,
@@ -43,7 +41,7 @@ alter_match_fn: ?*const fn(*const Self, ?[]const u8, ?[]const u8) bool = null,
 
 tag: ?u32 = null,
 floating: ?bool = null,
-decoration: ?Decoration = null,
+decoration: ?kwm.WindowDecoration = null,
 is_terminal: ?bool = null,
 disable_swallow: ?bool = null,
 scroller_mfact: ?f32 = null,
