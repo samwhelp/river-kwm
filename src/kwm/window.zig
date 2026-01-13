@@ -798,7 +798,11 @@ fn rwm_window_listener(rwm_window: *river.WindowV1, event: river.WindowV1.Event,
             log.debug("<{*}> dimensions: ({}, {})", .{ window, data.width, data.height });
 
             if (window.floating and window.fullscreen != .output) {
-                window.resize(data.width, data.height);
+                if (window.output == null) {
+                    window.unbound_resize(data.width, data.height);
+                } else {
+                    window.resize(data.width, data.height);
+                }
             }
         },
         .dimensions_hint => |data| {
