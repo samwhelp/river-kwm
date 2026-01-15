@@ -12,6 +12,8 @@ const kwm = @import("kwm");
 
 const Globals = struct {
     wl_compositor: ?*wl.Compositor = null,
+    wl_subcompositor: ?*wl.Subcompositor = null,
+    wl_shm: ?*wl.Shm = null,
     wp_viewporter: ?*wp.Viewporter = null,
     wp_single_pixel_buffer_manager: ?*wp.SinglePixelBufferManagerV1 = null,
     rwm: ?*river.WindowManagerV1 = null,
@@ -39,6 +41,8 @@ pub fn main() !void {
         if (display.roundtrip() != .SUCCESS) return error.RoundtripFailed;
 
         const wl_compositor = globals.wl_compositor orelse return error.MissingCompositor;
+        const wl_subcompositor = globals.wl_subcompositor orelse return error.MissingSubcompositor;
+        const wl_shm = globals.wl_shm orelse return error.MissingShm;
         const wp_single_pixel_buffer_manager = globals.wp_single_pixel_buffer_manager orelse return error.MissingSinglePixelBufferManagerV1;
         const wp_viewporter = globals.wp_viewporter orelse return error.MissingViewporter;
         const rwm = globals.rwm orelse return error.MissingRiverWindowManagerV1;
@@ -50,6 +54,8 @@ pub fn main() !void {
         kwm.Context.init(
             registry,
             wl_compositor,
+            wl_subcompositor,
+            wl_shm,
             wp_viewporter,
             wp_single_pixel_buffer_manager,
             rwm,
@@ -109,6 +115,10 @@ fn registry_listener(registry: *wl.Registry, event: wl.Registry.Event, globals: 
         .global => |global| {
             if (mem.orderZ(u8, global.interface, wl.Compositor.interface.name) == .eq) {
                 globals.wl_compositor = registry.bind(global.name, wl.Compositor, 4) catch return;
+            } else if (mem.orderZ(u8, global.interface, wl.Subcompositor.interface.name) == .eq) {
+                globals.wl_subcompositor = registry.bind(global.name, wl.Subcompositor, 1) catch return;
+            } else if (mem.orderZ(u8, global.interface, wl.Shm.interface.name) == .eq) {
+                globals.wl_shm = registry.bind(global.name, wl.Shm, 1) catch return;
             } else if (mem.orderZ(u8, global.interface, wp.Viewporter.interface.name) == .eq) {
                 globals.wp_viewporter = registry.bind(global.name, wp.Viewporter, 1) catch return;
             } else if (mem.orderZ(u8, global.interface, wp.SinglePixelBufferManagerV1.interface.name) == .eq) {

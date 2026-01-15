@@ -25,6 +25,22 @@ const XcursorTheme = struct {
     name: []const u8,
     size: u32,
 };
+const BarColor = struct {
+    fg: u32,
+    bg: u32,
+};
+const BarConfig = struct {
+    show_default: bool,
+    position: enum {
+        top,
+        bottom,
+    },
+    font: []const u8,
+    color: struct {
+        normal: BarColor,
+        select: BarColor,
+    },
+};
 const XkbBinding = struct {
     mode: Mode = .default,
     keysym: u32,
@@ -72,6 +88,22 @@ pub const scroll_factor = 1.0;
 
 pub const sloppy_focus = false;
 
+pub const bar: BarConfig = .{
+    .show_default = true,
+    .position = .top,
+    .font = "monospace:size=10",
+    .color = .{
+        .normal = .{
+            .fg = 0x828bb8ff,
+            .bg = 0x1b1d2bd0,
+        },
+        .select = .{
+            .fg = 0x444a73ff,
+            .bg = 0xc8d3f5d0,
+        },
+    },
+};
+
 pub var auto_swallow = true;
 
 pub const default_window_decoration: kwm.WindowDecoration = .ssd;
@@ -101,6 +133,12 @@ pub var scroller: kwm.layout.scroller = .{
     .outer_gap = 9,
     .snap_to_left = false,
 };
+pub const layout_tag: std.EnumMap(kwm.layout.Type, []const u8) = .initFullWith(.{ 
+    .tile = "[]=",
+    .monocle = "[=]",
+    .scroller = "[==]",
+    .float = "><>",
+});
 
 
 fn modify_nmaster(state: *const kwm.State, arg: *const kwm.binding.Arg) void {
@@ -173,6 +211,10 @@ pub const Mode = enum {
     default,
     floating,
     passthrough,
+};
+
+pub const tags = [_][]const u8 {
+    "1", "2", "3", "4", "5", "6", "7", "8", "9"
 };
 
 pub const xkb_bindings = blk: {
@@ -465,7 +507,7 @@ pub const xkb_bindings = blk: {
         },
     };
 
-    const tag_num = 9;
+    const tag_num = tags.len;
     var tag_binddings: [tag_num*4]XkbBinding = undefined;
     for (0..tag_num) |i| {
         tag_binddings[i*4] = .{

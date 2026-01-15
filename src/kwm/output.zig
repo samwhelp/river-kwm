@@ -1,5 +1,6 @@
 const Self = @This();
 
+const build_options = @import("build_options");
 const std = @import("std");
 const mem = std.mem;
 const math = std.math;
@@ -31,10 +32,13 @@ layout_tag: [32]layout.Type = .{ config.default_layout } ** 32,
 fullscreen_window: ?*Window = null,
 
 name: ?[]const u8 = null,
+scale: i32 = 1,
 x: i32 = undefined,
 y: i32 = undefined,
 width: i32 = undefined,
 height: i32 = undefined,
+
+bar: if (build_options.bar_enabled) @import("bar.zig") else void = undefined,
 
 
 pub fn create(
@@ -51,6 +55,10 @@ pub fn create(
         .rwm_layer_shell_output = rwm_layer_shell_output,
     };
     output.link.init();
+
+    if (comptime build_options.bar_enabled) {
+        try output.bar.init(output);
+    }
 
     rwm_output.setListener(*Self, rwm_output_listener, output);
 
@@ -80,7 +88,47 @@ pub fn destroy(self: *Self) void {
         rwm_layer_shell_output.destroy();
     }
 
+    if (comptime build_options.bar_enabled) self.bar.deinit();
+
     utils.allocator.destroy(self);
+}
+
+
+pub inline fn exclusive_x(self: *Self) i32 {
+    return self.x;
+}
+
+
+pub inline fn exclusive_y(self: *Self) i32 {
+    return
+        if (comptime build_options.bar_enabled)
+            if (config.bar.position == .bottom or self.bar.hided) self.y
+            else self.y + self.bar.height()
+        else self.y;
+}
+
+
+pub inline fn exclusive_width(self: *Self) i32 {
+    return self.width;
+}
+
+
+pub inline fn exclusive_height(self: *Self) i32 {
+    return
+        if (comptime build_options.bar_enabled)
+            if (self.bar.hided) self.height
+            else self.height - self.bar.height()
+        else self.height;
+}
+
+
+pub fn refresh_bar(self: *Self) void {
+    log.debug("<{*}> refresh bar", .{ self });
+
+    if (comptime @TypeOf(self.bar) != void) {
+        self.bar.reload_font();
+        self.bar.damage(.all);
+    }
 }
 
 
@@ -99,6 +147,8 @@ pub fn set_tag(self: *Self, tag: u32) void {
 
         log.debug("<{*}> update main tag to {b}", .{ self, self.main_tag });
     }
+
+    if (comptime build_options.bar_enabled) self.bar.damage(.tags);
 }
 
 
@@ -107,6 +157,8 @@ pub fn switch_to_previous_tag(self: *Self) void {
 
     mem.swap(u32, &self.tag, &self.prev_tag);
     mem.swap(u32, &self.main_tag, &self.prev_main_tag);
+
+    if (comptime build_options.bar_enabled) self.bar.damage(.tags);
 }
 
 
@@ -122,6 +174,8 @@ pub fn toggle_tag(self: *Self, mask: u32) void {
 
         self.main_tag = self.tag;
     }
+
+    if (comptime build_options.bar_enabled) self.bar.damage(.tags);
 }
 
 
@@ -138,6 +192,8 @@ pub fn set_current_layout(self: *Self, layout_t: layout.Type) void {
     log.debug("<{*}>(tag: {b}) set layout to {s}", .{ self, self.main_tag, @tagName(layout_t) });
 
     self.layout_tag[@ctz(self.main_tag)] = layout_t;
+
+    if (comptime build_options.bar_enabled) self.bar.damage(.layout);
 }
 
 
@@ -223,6 +279,7 @@ fn rwm_layer_shell_output_listener(
 fn wl_output_listener(wl_output: *wl.Output, event: wl.Output.Event, output: *Self) void {
     std.debug.assert(wl_output == output.wl_output.?);
 
+    const context = Context.get();
     switch (event) {
         .name => |data| {
             log.debug("<{*}> name: {s}", .{ output, data.name });
@@ -230,7 +287,6 @@ fn wl_output_listener(wl_output: *wl.Output, event: wl.Output.Event, output: *Se
             const name = mem.span(data.name);
             output.set_name(name);
 
-            const context = Context.get();
             {
                 var it = context.windows.safeIterator(.forward);
                 while (it.next()) |window| {
@@ -241,6 +297,15 @@ fn wl_output_listener(wl_output: *wl.Output, event: wl.Output.Event, output: *Se
                         }
                     }
                 }
+            }
+        },
+        .scale => |data| {
+            log.debug("<{*}> scale: {}", .{ output, data.factor });
+
+            if (output.scale != data.factor) {
+                output.scale = data.factor;
+                output.refresh_bar();
+                context.rwm.manageDirty();
             }
         },
         else => {}

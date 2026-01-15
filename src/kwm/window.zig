@@ -1,5 +1,6 @@
 const Self = @This();
 
+const build_options = @import("build_options");
 const std = @import("std");
 const mem = std.mem;
 const log = std.log.scoped(.window);
@@ -144,6 +145,10 @@ pub fn destroy(self: *Self) void {
         else => {}
     }
 
+    if (comptime build_options.bar_enabled) {
+        if (self.output) |output| output.bar.damage(.tags);
+    }
+
     self.link.remove();
     self.flink.remove();
     self.rwm_window.destroy();
@@ -187,6 +192,10 @@ pub fn set_tag(self: *Self, tag: u32) void {
     log.debug("<{*}> set tag: {b}", .{ self, tag });
 
     self.tag = tag;
+
+    if (comptime build_options.bar_enabled) {
+        if (self.output) |output| output.bar.damage(.tags);
+    }
 }
 
 
@@ -196,6 +205,10 @@ pub fn toggle_tag(self: *Self, mask: u32) void {
     log.debug("<{*}> toggle tag: {b}", .{ self, mask });
 
     self.tag ^= mask;
+
+    if (comptime build_options.bar_enabled) {
+        if (self.output) |output| output.bar.damage(.tags);
+    }
 }
 
 
@@ -221,14 +234,14 @@ pub fn move(self: *Self, x: ?i32, y: ?i32) void {
         config.border_width,
         @min(
             x orelse self.x,
-            self.output.?.width-self.width-config.border_width
+            self.output.?.exclusive_width()-self.width-config.border_width
         )
     );
     self.y = @max(
         config.border_width,
         @min(
             y orelse self.y,
-            self.output.?.height-self.height-config.border_width
+            self.output.?.exclusive_height()-self.height-config.border_width
         )
     );
 }
@@ -251,9 +264,9 @@ pub fn snap_to(
 
     switch (edge) {
         .top => new_y = 0,
-        .bottom => new_y = self.output.?.height,
+        .bottom => new_y = self.output.?.exclusive_height(),
         .left => new_x = 0,
-        .right => new_x = self.output.?.width,
+        .right => new_x = self.output.?.exclusive_width(),
     }
 
     self.move(new_x, new_y);
@@ -270,14 +283,14 @@ pub fn resize(self: *Self, width: ?i32, height: ?i32) void {
         self.min_width,
         @min(
             width orelse self.width,
-            self.output.?.width-self.x-config.border_width
+            self.output.?.exclusive_width()-self.x-config.border_width
         )
     );
     self.height = @max(
         self.min_height,
         @min(
             height orelse self.height,
-            self.output.?.height-self.y-config.border_width
+            self.output.?.exclusive_height()-self.y-config.border_width
         )
     );
 }
@@ -474,6 +487,10 @@ pub fn handle_events(self: *Self) void {
                 if (config.auto_swallow) {
                     self.try_swallow();
                 }
+
+                if (comptime build_options.bar_enabled) {
+                    if (self.output) |output| output.bar.damage(.tags);
+                }
             },
             .fullscreen => |data| {
                 log.debug("<{*}> managing fullscreen: {*}", .{ self, data });
@@ -605,10 +622,8 @@ pub fn render(self: *Self) void {
 
     log.debug("<{*}> rendering to (x: {}, y: {})", .{ self, self.x, self.y });
 
-    self.rwm_window_node.setPosition(
-        self.output.?.x + self.x,
-        self.output.?.y + self.y,
-    );
+    const x, const y = .{ self.output.?.exclusive_x(), self.output.?.exclusive_y() };
+    self.rwm_window_node.setPosition(x + self.x, y + self.y);
 
     var left = self.x - config.border_width;
     var right = self.x + self.width + config.border_width;

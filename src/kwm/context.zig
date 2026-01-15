@@ -1,5 +1,6 @@
 const Self = @This();
 
+const build_options = @import("build_options");
 const builtins = @import("builtin");
 const std = @import("std");
 const fmt = std.fmt;
@@ -28,6 +29,8 @@ var ctx: ?Self = null;
 
 wl_registry: *wl.Registry,
 wl_compositor: *wl.Compositor,
+wl_subcompositor: *wl.Subcompositor,
+wl_shm: *wl.Shm,
 wp_viewporter: *wp.Viewporter,
 wp_single_pixel_buffer_manager: *wp.SinglePixelBufferManagerV1,
 rwm: *river.WindowManagerV1,
@@ -59,6 +62,8 @@ startup_processes: [config.startup_cmds.len]?process.Child = undefined,
 pub fn init(
     wl_registry: *wl.Registry,
     wl_compositor: *wl.Compositor,
+    wl_subcompositor: *wl.Subcompositor,
+    wl_shm: *wl.Shm,
     wp_viewporter: *wp.Viewporter,
     wp_single_pixel_buffer_manager: *wp.SinglePixelBufferManagerV1,
     rwm: *river.WindowManagerV1,
@@ -70,11 +75,15 @@ pub fn init(
     // initialize once
     if (ctx != null) return;
 
+    if (comptime build_options.bar_enabled) _ = @import("fcft").init(.auto, false, .err);
+
     log.info("init context", .{});
 
     ctx = .{
         .wl_registry = wl_registry,
         .wl_compositor = wl_compositor,
+        .wl_subcompositor = wl_subcompositor,
+        .wl_shm = wl_shm,
         .wp_viewporter = wp_viewporter,
         .wp_single_pixel_buffer_manager = wp_single_pixel_buffer_manager,
         .rwm = rwm,
@@ -128,8 +137,12 @@ pub fn deinit() void {
 
     defer ctx = null;
 
+    if (comptime build_options.bar_enabled) @import("fcft").fini();
+
     ctx.?.wl_registry.destroy();
     ctx.?.wl_compositor.destroy();
+    ctx.?.wl_subcompositor.destroy();
+    ctx.?.wl_shm.destroy();
     ctx.?.wp_viewporter.destroy();
     ctx.?.wp_single_pixel_buffer_manager.destroy();
     ctx.?.rwm.destroy();
@@ -137,6 +150,16 @@ pub fn deinit() void {
     ctx.?.rwm_layer_shell.destroy();
     if (ctx.?.rwm_input_manager) |rwm_input_manager| rwm_input_manager.destroy();
     if (ctx.?.rwm_libinput_config) |rwm_libinput_config| rwm_libinput_config.destroy();
+
+    // first destroy windows for it's destroy function may depends on others
+    {
+        var it = ctx.?.windows.safeIterator(.forward);
+        while (it.next()) |window| {
+            window.destroy();
+        }
+        ctx.?.windows.init();
+        ctx.?.focus_stack.init();
+    }
 
     {
         var it = ctx.?.seats.safeIterator(.forward);
@@ -170,15 +193,6 @@ pub fn deinit() void {
             libinput_device.destroy();
         }
         ctx.?.libinput_devices.init();
-    }
-
-    {
-        var it = ctx.?.windows.safeIterator(.forward);
-        while (it.next()) |window| {
-            window.destroy();
-        }
-        ctx.?.windows.init();
-        ctx.?.focus_stack.init();
     }
 
     ctx.?.terminal_windows.deinit();
@@ -244,9 +258,7 @@ pub fn focus(self: *Self, window: *Window) void {
     log.debug("<{*}> focus window: {*}", .{ self, window });
 
     if (window.output) |output| {
-        if (self.current_output == null or output != self.current_output.?) {
-            self.set_current_output(output);
-        }
+        self.set_current_output(output);
     }
 
     window.flink.remove();
@@ -447,11 +459,19 @@ pub inline fn find_terminal(self: *Self, pid: i32) ?*Window {
 pub inline fn set_current_output(self: *Self, output: ?*Output) void {
     log.debug("set current output: {*}", .{ output });
 
-    self.current_output = output;
+    if (comptime build_options.bar_enabled) {
+        if (self.current_output) |o| o.bar.damage(.title);
+    }
 
-    if (self.current_output) |current_output| {
-        if (current_output.rwm_layer_shell_output) |rwm_layer_shell_output| {
-            rwm_layer_shell_output.setDefault();
+    if (self.current_output != output) {
+        self.current_output = output;
+
+        if (output) |o| {
+            if (comptime build_options.bar_enabled) o.bar.damage(.title);
+
+            if (o.rwm_layer_shell_output) |rwm_layer_shell_output| {
+                rwm_layer_shell_output.setDefault();
+            }
         }
     }
 }
@@ -629,6 +649,15 @@ fn rwm_listener(rwm: *river.WindowManagerV1, event: river.WindowManagerV1.Event,
 
                 // place focused window top
                 window.place(.top);
+            }
+
+            if (comptime build_options.bar_enabled) {
+                {
+                    var it = context.outputs.safeIterator(.forward);
+                    while (it.next()) |output| {
+                        output.bar.render();
+                    }
+                }
             }
 
             rwm.renderFinish();

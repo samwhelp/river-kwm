@@ -35,6 +35,8 @@ pub fn build(b: *std.Build) void {
     scanner.addCustomProtocol(b.path("protocol/river-libinput-config-v1.xml"));
 
     scanner.generate("wl_compositor", 4);
+    scanner.generate("wl_subcompositor", 1);
+    scanner.generate("wl_shm", 1);
     scanner.generate("wl_output", 4);
     scanner.generate("wp_viewporter", 1);
     scanner.generate("wp_single_pixel_buffer_manager_v1", 1);
@@ -105,6 +107,19 @@ pub fn build(b: *std.Build) void {
     rule_mod.addImport("kwm", kwm_mod);
     kwm_mod.addImport("config", config_mod);
 
+    const bar_enabled = b.option(bool, "bar", "if enable bar") orelse true;
+    if (bar_enabled) {
+        const pixman_mod = b.dependency("pixman", .{}).module("pixman");
+        const fcft_mod = b.dependency("fcft", .{}).module("fcft");
+        kwm_mod.addImport("pixman", pixman_mod);
+        kwm_mod.addImport("fcft", fcft_mod);
+    }
+
+    const options = b.addOptions();
+    options.addOption(bool, "bar_enabled", bar_enabled);
+
+    kwm_mod.addOptions("build_options", options);
+
     // Here we define an executable. An executable needs to have a root module
     // which needs to expose a `main` function. While we could add a main function
     // to the module defined above, it's sometimes preferable to split business
@@ -149,6 +164,8 @@ pub fn build(b: *std.Build) void {
 
     exe.root_module.linkSystemLibrary("wayland-client", .{});
     exe.root_module.linkSystemLibrary("xkbcommon", .{});
+    exe.root_module.linkSystemLibrary("pixman-1", .{});
+    exe.root_module.linkSystemLibrary("fcft", .{});
 
     // This declares intent for the executable to be installed into the
     // install prefix when running `zig build` (i.e. when executing the default
