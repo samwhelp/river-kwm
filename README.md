@@ -28,7 +28,7 @@ A window manager based on River Wayland Compositor, written in Zig
 ## build
 
 ```zig
-zig build -Dconfig=/path/to/specify/config -Doptimize=ReleaseSafe
+zig build -Doptimize=ReleaseSafe
 ```
 
 It will try to find `config.zig` as config file. If not found, will create it from `config.def.zig` as backup.
