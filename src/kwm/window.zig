@@ -487,10 +487,6 @@ pub fn handle_events(self: *Self) void {
                 if (config.auto_swallow) {
                     self.try_swallow();
                 }
-
-                if (comptime build_options.bar_enabled) {
-                    if (self.output) |output| output.bar.damage(.tags);
-                }
             },
             .fullscreen => |data| {
                 log.debug("<{*}> managing fullscreen: {*}", .{ self, data });
