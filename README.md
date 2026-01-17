@@ -25,6 +25,8 @@ A window manager based on River Wayland Compositor, written in Zig
 
 **Rich window state:** swallow, maximize, fullscreen, fakefullscreen
 
+**With simple status bar:** dwm like bar
+
 ## build
 
 ```zig
@@ -33,7 +35,7 @@ zig build -Doptimize=ReleaseSafe
 
 It will try to find `config.zig` as config file. If not found, will create it from `config.def.zig` as backup.
 
-You can use `-Dconfig` to specify custom config file path, `-Doptimize` to specify build mode.
+You can use `-Dconfig` to specify custom config file path, `-Dbar` to enable/disable status bar, default is true, `-Doptimize` to specify build mode.
 
 ## configuration
 
