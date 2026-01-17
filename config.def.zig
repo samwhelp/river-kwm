@@ -358,6 +358,11 @@ pub const xkb_bindings = blk: {
             .action = .zoom,
         },
         .{
+            .keysym = Keysym.b,
+            .modifiers = Super,
+            .action = .toggle_bar,
+        },
+        .{
             .keysym = Keysym.l,
             .modifiers = Super,
             .action = .{ .custom_fn = .{ .func = &modify_mfact, .arg = .{ .f = 0.01 } } },
