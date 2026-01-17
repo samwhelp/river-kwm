@@ -140,7 +140,7 @@ pub fn toggle(self: *Self) void {
 }
 
 
-pub fn damage(self: *Self, @"type": enum { all, tags, layout, mode, title, status }) void {
+pub fn damage(self: *Self, @"type": enum { all, tags, dynamic, layout, mode, title, status }) void {
     log.debug("<{*}> damage {s}", .{ self, @tagName(@"type") });
 
     switch (@"type") {
