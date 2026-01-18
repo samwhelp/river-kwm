@@ -228,9 +228,9 @@ pub const Mode = enum {
 };
 // if not set, will use @tagName(mode) as replacement
 // if set to empty string, will hide
-pub const mode_tag: std.EnumMap(Mode, ?[]const u8) = .init(.{
-    .lock = null,
-    .default = null,
+pub const mode_tag: std.EnumMap(Mode, []const u8) = .init(.{
+    .lock = "",
+    .default = "",
     .floating = "F",
     .passthrough = "P",
 });
