@@ -785,6 +785,15 @@ fn rwm_listener(rwm: *river.WindowManagerV1, event: river.WindowManagerV1.Event,
             };
             context.outputs.append(output);
 
+            {
+                var it = context.windows.safeIterator(.forward);
+                while (it.next()) |window| {
+                    if (window.output == null) {
+                        window.set_output(output, false);
+                    }
+                }
+            }
+
             if (context.current_output == null) {
                 context.set_current_output(output);
             }
