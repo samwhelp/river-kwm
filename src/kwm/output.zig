@@ -270,6 +270,21 @@ fn wl_output_listener(wl_output: *wl.Output, event: wl.Output.Event, output: *Se
 
     const context = Context.get();
     switch (event) {
+        .geometry => |data| {
+            log.debug(
+                "<{*}> geometry: (x: {}, y: {}, physical_width: {}, physical_height: {}, subpixel: {s}, make: {s}, model: {s}, transform: {s})",
+                .{ output, data.x, data.y, data.physical_width, data.physical_height, @tagName(data.subpixel), data.make, data.model, @tagName(data.transform) },
+            );
+        },
+        .mode => |data| {
+            log.debug(
+                "<{*}> mode: (flags: (current: {}, preferred: {}), width: {}, height: {}, refresh: {})",
+                .{ output, data.flags.current, data.flags.preferred, data.width, data.height, data.refresh },
+            );
+        },
+        .scale => |data| {
+            log.debug("<{*}> scale: {}", .{ output, data.factor });
+        },
         .name => |data| {
             log.debug("<{*}> name: {s}", .{ output, data.name });
 
@@ -288,9 +303,11 @@ fn wl_output_listener(wl_output: *wl.Output, event: wl.Output.Event, output: *Se
                 }
             }
         },
-        .scale => |data| {
-            log.debug("<{*}> scale: {}", .{ output, data.factor });
+        .description => |data| {
+            log.debug("<{*}> description: {s}", .{ output, data.description });
         },
-        else => {}
+        .done => {
+            log.debug("<{*}> done", .{ output });
+        }
     }
 }
