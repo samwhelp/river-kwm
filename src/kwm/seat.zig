@@ -212,6 +212,16 @@ pub fn try_focus(self: *Self) void {
 }
 
 
+pub fn append_action(self: *Self, action: binding.Action) void {
+    log.debug("<{*}> append action: {s}", .{ @tagName(action) });
+
+    self.unhandled_actions.append(utils.allocator, action) catch |err| {
+        log.err("<{*}> append action failed: {}", .{ err });
+        return;
+    };
+}
+
+
 fn handle_actions(self: *Self) void {
     defer self.unhandled_actions.clearRetainingCapacity();
 
