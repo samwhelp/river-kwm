@@ -550,12 +550,12 @@ pub const xkb_bindings = blk: {
         .{
             .keysym = Keysym.apostrophe,
             .modifiers = Super,
-            .action = .{ .shift_tag = 1 },
+            .action = .{ .shift_tag = .{ .direction = .forward } },
         },
         .{
             .keysym = Keysym.semicolon,
             .modifiers = Super,
-            .action = .{ .shift_tag = -1 },
+            .action = .{ .shift_tag = .{ .direction = .reverse } },
         },
         .{
             .keysym = Keysym.@"0",

@@ -16,6 +16,7 @@ const config = @import("config");
 const layout = @import("layout.zig");
 const Context = @import("context.zig");
 const Window = @import("window.zig");
+const types = @import("types.zig");
 
 
 link: wl.list.Link = undefined,
@@ -150,10 +151,15 @@ pub fn switch_to_previous_tag(self: *Self) void {
     if (comptime build_options.bar_enabled) self.bar.damage(.tags);
 }
 
-pub fn shift_tag(self: *Self, step: i2) void {
+pub fn shift_tag(self: *Self, direction: types.Direction) void {
+    const step: i2 = switch (direction) {
+        .forward => 1,
+        .reverse => -1,
+    };
+
     if (step == 0) return;
 
-    log.debug("<{*}> shift tag: {}", .{ self, step });
+    log.debug("<{*}> shift tag: {} ({})", .{ self, direction, step });
 
     const context = Context.get();
     const total_tags = self.layout_tag.len;
@@ -171,7 +177,7 @@ pub fn shift_tag(self: *Self, step: i2) void {
 
     if (occupied_tags == 0) {
         var new_index: u6 = undefined;
-        if (step > 0) {
+        if (direction == .forward) {
             new_index = @intCast((current_index + 1) % total_tags);
         } else {
             new_index = @intCast((current_index + total_tags - 1) % total_tags);
@@ -185,7 +191,7 @@ pub fn shift_tag(self: *Self, step: i2) void {
     var attempts: u6 = 0;
 
     while (attempts < total_tags) {
-        if (step > 0) {
+        if (direction == .forward) {
             new_index = @intCast((new_index + 1) % total_tags);
         } else {
             new_index = @intCast((new_index + total_tags - 1) % total_tags);
@@ -202,6 +208,7 @@ pub fn shift_tag(self: *Self, step: i2) void {
 
     log.warn("<{*}> failed to find occupied tag", .{ self });
 }
+
 
 pub fn toggle_tag(self: *Self, mask: u32) void {
     if (self.tag ^ mask == 0) return;
