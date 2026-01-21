@@ -59,7 +59,4 @@ You could see all bindings in `config.zig`. It should be noted that the `quit` a
 
 ## License
 
-The source code in this project is released under the [GPL-3.0](https://www.gnu.org/licenses/gpl-3.0.txt) license.
-
-> 4. Conveying Verbatim Copies.
-You may convey verbatim copies of the Program's source code as you receive it, in any medium, provided that you conspicuously and appropriately publish on each copy an appropriate copyright notice; keep intact all notices stating that this License and any non-permissive terms added in accord with section 7 apply to the code; keep intact all notices of the absence of any warranty; and **give all recipients a copy of this License** along with the Program.
+The source code in this project is released under the [GPL-3.0](./LICENSE)
