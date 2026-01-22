@@ -40,6 +40,7 @@ rwm_xkb_bindings: *river.XkbBindingsV1,
 rwm_layer_shell: *river.LayerShellV1,
 rwm_input_manager: ?*river.InputManagerV1,
 rwm_libinput_config: ?*river.LibinputConfigV1,
+rwm_xkb_config: ?*river.XkbConfigV1,
 
 seats: wl.list.Head(Seat, .link) = undefined,
 current_seat: ?*Seat = null,
@@ -77,6 +78,7 @@ pub fn init(
     rwm_layer_shell: *river.LayerShellV1,
     rwm_input_manager: *river.InputManagerV1,
     rwm_libinput_config: *river.LibinputConfigV1,
+    rwm_xkb_config: *river.XkbConfigV1,
 ) void {
     // initialize once
     if (ctx != null) return;
@@ -100,6 +102,7 @@ pub fn init(
         .rwm_layer_shell = rwm_layer_shell,
         .rwm_input_manager = rwm_input_manager,
         .rwm_libinput_config = rwm_libinput_config,
+        .rwm_xkb_config = rwm_xkb_config,
         .terminal_windows = .init(utils.allocator),
         .env = process.getEnvMap(utils.allocator) catch |err| blk: {
             log.warn("get EnvMap failed: {}", .{ err });
@@ -162,6 +165,7 @@ pub fn deinit() void {
     ctx.?.rwm_layer_shell.destroy();
     if (ctx.?.rwm_input_manager) |rwm_input_manager| rwm_input_manager.destroy();
     if (ctx.?.rwm_libinput_config) |rwm_libinput_config| rwm_libinput_config.destroy();
+    if (ctx.?.rwm_xkb_config) |rwm_xkb_config| rwm_xkb_config.destroy();
 
     // first destroy windows for it's destroy function may depends on others
     {
