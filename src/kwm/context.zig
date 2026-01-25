@@ -52,6 +52,7 @@ current_output: ?*Output = null,
 input_devices: wl.list.Head(InputDevice, .link) = undefined,
 libinput_devices: wl.list.Head(LibinputDevice, .link) = undefined,
 xkb_keyboards: wl.list.Head(XkbKeyboard, .link) = undefined,
+input_config_applied: bool = false,
 libinput_config_applied: bool = false,
 xkb_keyboard_config_applied: bool = false,
 
@@ -678,6 +679,15 @@ fn promote_new_seat(self: *Self) void {
 
 fn prepare_manage(self: *Self) void {
     log.debug("prepare to manage", .{});
+
+    if (!self.input_config_applied) {
+        defer self.input_config_applied = true;
+
+        var it = self.input_devices.safeIterator(.forward);
+        while (it.next()) |input_device| {
+            input_device.apply_config();
+        }
+    }
 
     if (!self.libinput_config_applied) {
         defer self.libinput_config_applied = true;

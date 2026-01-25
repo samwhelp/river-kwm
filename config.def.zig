@@ -92,15 +92,14 @@ pub const startup_cmds = [_][]const []const u8 {
 
 pub const xcursor_theme: ?XcursorTheme = null;
 
-pub const repeat_rate = 50;
-pub const repeat_delay = 300;
-pub const scroll_factor = 1.0;
 
 fn touchpad_config(name: ?[]const u8) ?river.LibinputDeviceV1.NaturalScrollState {
     const pattern: Rule.Pattern = .compile(".*[tT]ouchpad");
     return if (pattern.is_match(name orelse return null)) .enabled else null;
 }
 
+pub const repeat_info: InputConfig(kwm.KeyboardRepeatInfo)                                  = .{ .value = .{ .rate = 50, .delay = 300 } };
+pub const scroll_factor: InputConfig(f64)                                                   = .{ .value = null };
 pub const send_events_modes: InputConfig(river.LibinputDeviceV1.SendEventsModes.Enum)       = .{ .value = .enabled };
 pub const tap: InputConfig(river.LibinputDeviceV1.TapState)                                 = .{ .value = .enabled };
 pub const drag: InputConfig(river.LibinputDeviceV1.DragState)                               = .{ .value = .enabled };
