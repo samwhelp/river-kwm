@@ -268,7 +268,6 @@ fn modify_master_location(state: *const kwm.State, arg: *const kwm.binding.Arg) 
             'd' => .bottom,
             else => return,
         };
-        state.refresh_current_bar();
     }
 }
 
