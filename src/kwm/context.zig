@@ -53,6 +53,7 @@ input_devices: wl.list.Head(InputDevice, .link) = undefined,
 libinput_devices: wl.list.Head(LibinputDevice, .link) = undefined,
 xkb_keyboards: wl.list.Head(XkbKeyboard, .link) = undefined,
 libinput_config_applied: bool = false,
+xkb_keyboard_config_applied: bool = false,
 
 windows: wl.list.Head(Window, .link) = undefined,
 focus_stack: wl.list.Head(Window, .flink) = undefined,
@@ -684,6 +685,15 @@ fn prepare_manage(self: *Self) void {
         var it = self.libinput_devices.safeIterator(.forward);
         while (it.next()) |libinput_device| {
             libinput_device.apply_config();
+        }
+    }
+
+    if (!self.xkb_keyboard_config_applied) {
+        defer self.xkb_keyboard_config_applied = true;
+
+        var it = self.xkb_keyboards.safeIterator(.forward);
+        while (it.next()) |xkb_keyboard| {
+            xkb_keyboard.apply_config();
         }
     }
 
