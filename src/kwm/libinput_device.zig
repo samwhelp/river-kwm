@@ -483,7 +483,7 @@ fn set_rotation(self: *Self, angle: u32) void {
 }
 
 
-fn get_from_config(self: *const Self, comptime T: type, cfg: *const config.InputConfig(T)) ?T {
+inline fn get_from_config(self: *const Self, comptime T: type, cfg: *const config.InputConfig(T)) ?T {
     if (self.input_device) |input_device| {
         return switch (cfg.*) {
             .value => |value| value,

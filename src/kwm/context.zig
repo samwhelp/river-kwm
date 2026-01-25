@@ -243,6 +243,13 @@ pub fn deinit() void {
 }
 
 
+pub inline fn get() *Self {
+    std.debug.assert(ctx != null);
+
+    return &ctx.?;
+}
+
+
 pub fn reload_input_config(self: *Self) void {
     log.debug("reload input config", .{});
 
@@ -331,13 +338,6 @@ pub fn update_bar_status(self: *Self) void {
             log.warn("call `update_bar_status` while bar_status_fd is null", .{});
         }
     } else unreachable;
-}
-
-
-pub inline fn get() *Self {
-    std.debug.assert(ctx != null);
-
-    return &ctx.?;
 }
 
 
