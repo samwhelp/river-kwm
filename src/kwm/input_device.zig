@@ -20,12 +20,7 @@ rwm_input_device: *river.InputDeviceV1,
 
 new: bool = true,
 name: ?[]const u8 = null,
-type: union(river.InputDeviceV1.Type) {
-    keyboard: ?types.KeyboardRepeatInfo,
-    pointer: ?f64,
-    touch,
-    tablet,
-} = undefined,
+type: river.InputDeviceV1.Type = undefined,
 
 
 pub fn create(rwm_input_device: *river.InputDeviceV1) !*Self {
@@ -122,13 +117,7 @@ fn rwm_input_device_listener(rwm_input_device: *river.InputDeviceV1, event: rive
         .type => |data| {
             log.debug("<{*}> type: {s}", .{ input_device, @tagName(data.type) });
 
-            input_device.type = switch (data.type) {
-                .keyboard => .{ .keyboard = null },
-                .pointer => .{ .pointer = null },
-                .touch => .touch,
-                .tablet => .tablet,
-                else => return,
-            };
+            input_device.type = data.type;
         },
         .name => |data| {
             log.debug("<{*}> name: {s}", .{ input_device, data.name });
