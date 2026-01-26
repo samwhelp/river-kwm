@@ -72,6 +72,7 @@ pub const Action = union(enum) {
     zoom,
     switch_layout: struct { layout: layout.Type },
     switch_to_previous_layout,
+    modify_scroller_mfact: struct { step: f32 },
     toggle_bar,
     custom_fn: struct {
         arg: Arg,

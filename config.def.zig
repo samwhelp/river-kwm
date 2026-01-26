@@ -229,7 +229,7 @@ fn modify_mfact(state: *const kwm.State, arg: *const kwm.binding.Arg) ?kwm.bindi
     if (state.layout) |layout_t| {
         switch (layout_t) {
             .tile => tile.mfact = @min(1, @max(0, tile.mfact+arg.f)),
-            .scroller => scroller.mfact = @min(1, @max(0, scroller.mfact+arg.f)),
+            .scroller => return .{ .modify_scroller_mfact = .{ .step = arg.f } },
             else => {},
         }
     }

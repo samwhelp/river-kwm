@@ -366,6 +366,15 @@ fn handle_actions(self: *Self) void {
                     output.switch_to_previous_layout();
                 }
             },
+            .modify_scroller_mfact => |data| {
+                if (context.focused_window()) |window| {
+                    std.debug.assert(window.output != null);
+
+                    if (!window.floating and window.output.?.current_layout() == .scroller) {
+                        window.scroller_mfact = @min(1.0, @max(0, window.scroller_mfact + data.step));
+                    }
+                }
+            },
             .toggle_bar => {
                 if (comptime build_options.bar_enabled) {
                     if (context.current_output) |output| {
