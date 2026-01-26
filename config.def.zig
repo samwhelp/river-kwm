@@ -212,6 +212,14 @@ pub fn layout_tag(layout: kwm.layout.Type) []const u8 {
 }
 
 
+//////////////////////////////////////////////////////////
+// custom function for `custom_fn` binding action
+// below are some useful example
+// it could use to modify some variable define above or
+// dynamicly return a binding action
+// You could define other functions as you wish
+//////////////////////////////////////////////////////////
+
 fn modify_nmaster(state: *const kwm.State, arg: *const kwm.binding.Arg) ?kwm.binding.Action {
     std.debug.assert(arg.* == .i);
 
