@@ -68,24 +68,24 @@ fn apply_config(self: *Self) void {
     log.debug("<{*}> apply config", .{ self });
 
     switch (self.type) {
-        .keyboard => |*info| {
-            if (self.get_from_config(types.KeyboardRepeatInfo, &config.repeat_info)) |repeat_info| {
-                if (info.* == null or info.*.?.rate != repeat_info.rate or info.*.?.delay != repeat_info.delay) {
-                    log.debug("<{*}> set repeat info: (rate: {}, delay: {})", .{ self, repeat_info.rate, repeat_info.delay});
+        .keyboard => {
+            if (switch (config.repeat_info) {
+                .value => |value| value,
+                .func => |func| func(self.name),
+            }) |repeat_info| {
+                log.debug("<{*}> set repeat info: (rate: {}, delay: {})", .{ self, repeat_info.rate, repeat_info.delay});
 
-                    self.rwm_input_device.setRepeatInfo(repeat_info.rate, repeat_info.delay);
-                    info.* = repeat_info;
-                }
+                self.rwm_input_device.setRepeatInfo(repeat_info.rate, repeat_info.delay);
             }
         },
-        .pointer => |*factor| {
-            if (self.get_from_config(f64, &config.scroll_factor)) |scroll_factor| {
-                if (factor.* == null or @abs(factor.*.?-scroll_factor) > 1e-6) {
-                    log.debug("<{*}> set scroll factor: {}", .{ self, scroll_factor });
+        .pointer => {
+            if (switch (config.scroll_factor) {
+                .value => |value| value,
+                .func => |func| func(self.name),
+            }) |scroll_factor| {
+                log.debug("<{*}> set scroll factor: {}", .{ self, scroll_factor });
 
-                    self.rwm_input_device.setScrollFactor(.fromDouble(scroll_factor));
-                    factor.* = scroll_factor;
-                }
+                self.rwm_input_device.setScrollFactor(.fromDouble(scroll_factor));
             }
         },
         else => {}
