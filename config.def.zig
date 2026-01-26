@@ -679,10 +679,8 @@ fn show_appid(state: *const kwm.State, _: *const kwm.binding.Arg) ?kwm.binding.A
     };
 
     if (state.window_below_pointer) |window| {
-        if (window.app_id) |app_id| {
-            static.argv[1] = fmt.bufPrint(&static.buffer, "APP_ID: {s}", .{ app_id }) catch return null;
-            return .{ .spawn = .{ .argv = &static.argv } };
-        }
+        static.argv[1] = fmt.bufPrint(&static.buffer, "APP_ID: {s}", .{ window.app_id orelse "NULL" }) catch return null;
+        return .{ .spawn = .{ .argv = &static.argv } };
     }
     return null;
 }
