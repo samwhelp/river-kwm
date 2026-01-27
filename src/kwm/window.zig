@@ -287,18 +287,18 @@ pub fn resize(self: *Self, width: ?i32, height: ?i32) void {
         .{ self, self.width, self.height },
     );
 
-    self.width = @max(
-        self.min_width,
-        @min(
+    self.width = @min(
+        self.output.?.exclusive_width()-self.x-config.border_width,
+        @max(
             width orelse self.width,
-            self.output.?.exclusive_width()-self.x-config.border_width
+            self.min_width,
         )
     );
-    self.height = @max(
-        self.min_height,
-        @min(
+    self.height = @min(
+        self.output.?.exclusive_height()-self.y-config.border_width,
+        @max(
             height orelse self.height,
-            self.output.?.exclusive_height()-self.y-config.border_width
+            self.min_height,
         )
     );
 }
