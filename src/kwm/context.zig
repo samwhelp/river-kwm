@@ -759,7 +759,7 @@ fn rwm_listener(rwm: *river.WindowManagerV1, event: river.WindowManagerV1.Event,
 
             const focused = context.focused_window();
             {
-                var it = context.windows.safeIterator(.forward);
+                var it = context.focus_stack.safeIterator(.forward);
                 while (it.next()) |window| {
                     if (!window.is_visible() or window.is_under_fullscreen_window()) {
                         window.hide();
