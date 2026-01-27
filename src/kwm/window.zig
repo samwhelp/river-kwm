@@ -383,6 +383,9 @@ pub fn set_border(self: *Self, width: i32, rgb: u32) void {
 
 
 pub fn ensure_floating(self: *Self) void {
+    if (self.output) |output| {
+        if (output.current_layout() == .float) return;
+    }
     if (!self.floating) {
         log.debug("<{*}> turning floating", .{ self });
 
