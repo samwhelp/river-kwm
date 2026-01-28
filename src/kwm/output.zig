@@ -71,7 +71,7 @@ pub fn create(
 
 
 pub fn destroy(self: *Self) void {
-    defer log.debug("<{*}> destroied", .{ self });
+    defer log.debug("<{*}> destroyed", .{ self });
 
     self.set_name(null);
 
