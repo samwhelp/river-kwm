@@ -343,6 +343,12 @@ pub const xkb_bindings = blk: {
             .modifiers = Super|Shift,
             .action = .{ .switch_mode = .{ .mode = .default } }
         },
+        .{
+            .mode = .passthrough,
+            .keysym = Keysym.Escape,
+            .modifiers = 0,
+            .action = .{ .switch_mode = .{ .mode = .default } }
+        },
 
 
         // floating
@@ -355,6 +361,12 @@ pub const xkb_bindings = blk: {
             .mode = .floating,
             .keysym = Keysym.f,
             .modifiers = Super|Ctrl,
+            .action = .{ .switch_mode = .{ .mode = .default } },
+        },
+        .{
+            .mode = .floating,
+            .keysym = Keysym.Escape,
+            .modifiers = 0,
             .action = .{ .switch_mode = .{ .mode = .default } },
         },
         .{
