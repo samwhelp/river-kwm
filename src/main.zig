@@ -55,7 +55,7 @@ pub fn main() !void {
         const rwm_libinput_config = globals.rwm_libinput_config orelse return error.MissingRiverLibinputConfig;
         const rwm_xkb_config = globals.rwm_xkb_config orelse return error.MissingRiverXkbConfig;
 
-        kwm.Context.init(
+        kwm.init(
             registry,
             wl_compositor,
             wl_subcompositor,
@@ -71,7 +71,7 @@ pub fn main() !void {
             rwm_xkb_config,
         );
     }
-    defer kwm.Context.deinit();
+    defer kwm.deinit();
 
     const wayland_fd = display.getFd();
 
@@ -89,10 +89,9 @@ pub fn main() !void {
         .{ .fd = -1, .events = posix.POLL.IN, .revents = 0 },
     };
 
-    const context = kwm.Context.get();
-    while (context.running) {
+    while (kwm.is_running()) {
         var poll_fd_num: u8 = 2;
-        if (context.bar_status_fd) |fd| {
+        if (kwm.bar_status_fd()) |fd| {
             poll_fds[2].fd = fd;
             poll_fd_num += 1;
         }
@@ -117,11 +116,11 @@ pub fn main() !void {
             };
             if (nbytes != @sizeOf(posix.siginfo_t)) continue;
 
-            context.handle_signal(signal_info.signo);
+            kwm.handle_signal(signal_info.signo);
         }
 
         if (poll_fd_num > 2 and poll_fds[2].revents & posix.POLL.IN != 0) {
-            context.update_bar_status();
+            kwm.update_bar_status();
         }
     }
 }
