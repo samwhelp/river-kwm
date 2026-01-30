@@ -77,16 +77,7 @@ pub fn run(wl_display: *wl.Display) !void {
                 switch (fd_type) {
                     .wayland => if (wl_display.dispatch() != .SUCCESS) return error.DispatchFailed,
                     .signal => {
-                        var signal_info: posix.siginfo_t = undefined;
-                        const buffer: *[@sizeOf(posix.siginfo_t)]u8 = @ptrCast(&signal_info);
-                        const nbytes = posix.read(signal_fd, buffer) catch |err| {
-                            switch (err) {
-                                error.WouldBlock => continue,
-                                else => return err,
-                            }
-                        };
-                        if (nbytes != @sizeOf(posix.siginfo_t)) continue;
-
+                        const signal_info = try read(posix.siginfo_t, poll_fd.fd) orelse continue;
                         context.handle_signal(signal_info.signo);
                     },
                     .bar_status => context.update_bar_status(),
@@ -95,4 +86,18 @@ pub fn run(wl_display: *wl.Display) !void {
         }
 
     }
+}
+
+
+fn read(comptime T: type, fd: posix.fd_t) !?T {
+    var data: T = undefined;
+    const buffer: *[@sizeOf(T)]u8 = @ptrCast(&data);
+    const nbytes = posix.read(fd, buffer) catch |err| {
+        switch (err) {
+            error.WouldBlock => return null,
+            else => return err,
+        }
+    };
+    if (nbytes != @sizeOf(T)) return null;
+    return data;
 }
