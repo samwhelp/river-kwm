@@ -13,6 +13,7 @@ const FDType = enum {
     wayland,
     signal,
     bar_status,
+    key_repeat,
 };
 
 pub const layout = @import("kwm/layout.zig");
@@ -69,6 +70,13 @@ pub fn run(wl_display: *wl.Display) !void {
             try fd_types.appendBounded(.bar_status);
         }
 
+        if (context.key_repeat) |key_repeat| {
+            if (key_repeat.is_repeating()) {
+                try poll_fds.appendBounded(.{ .fd = key_repeat.timer_fd, .events = posix.POLL.IN, .revents = 0 });
+                try fd_types.appendBounded(.key_repeat);
+            }
+        }
+
         _ = wl_display.flush();
         _ = try posix.poll(poll_fds.items, -1);
 
@@ -81,6 +89,10 @@ pub fn run(wl_display: *wl.Display) !void {
                         context.handle_signal(signal_info.signo);
                     },
                     .bar_status => context.update_bar_status(),
+                    .key_repeat => {
+                        const count = try read(u64, poll_fd.fd) orelse continue;
+                        context.key_repeat.?.repeat(count);
+                    },
                 }
             }
         }

@@ -47,7 +47,7 @@ const XkbBinding = struct {
     mode: Mode = .default,
     keysym: u32,
     modifiers: u32,
-    event: river.XkbBindingV1.Event = .pressed,
+    event: kwm.binding.XkbBinding.Event = .pressed,
     action: kwm.binding.Action,
 };
 const PointerBinding = struct {
@@ -117,6 +117,9 @@ pub const startup_cmds = [_][]const []const u8 {
 };
 
 pub const xcursor_theme: ?XcursorTheme = null;
+
+pub const repeat_rate = 50;
+pub const repeat_delay = 300;
 
 pub const sloppy_focus = false;
 
@@ -361,48 +364,56 @@ pub const xkb_bindings = blk: {
             .mode = .floating,
             .keysym = Keysym.l,
             .modifiers = Super,
+            .event = .repeat,
             .action = .{ .move = .{ .step = .{ .horizontal = 10 } } }
         },
         .{
             .mode = .floating,
             .keysym = Keysym.h,
             .modifiers = Super,
+            .event = .repeat,
             .action = .{ .move = .{ .step = .{ .horizontal = -10 } } }
         },
         .{
             .mode = .floating,
             .keysym = Keysym.j,
             .modifiers = Super,
+            .event = .repeat,
             .action = .{ .move = .{ .step = .{ .vertical = 10 } } }
         },
         .{
             .mode = .floating,
             .keysym = Keysym.k,
             .modifiers = Super,
+            .event = .repeat,
             .action = .{ .move = .{ .step = .{ .vertical = -10 } } }
         },
         .{
             .mode = .floating,
             .keysym = Keysym.l,
             .modifiers = Super|Ctrl,
+            .event = .repeat,
             .action = .{ .resize = .{ .step = .{ .horizontal = 10 } } }
         },
         .{
             .mode = .floating,
             .keysym = Keysym.h,
             .modifiers = Super|Ctrl,
+            .event = .repeat,
             .action = .{ .resize = .{ .step = .{ .horizontal = -10 } } }
         },
         .{
             .mode = .floating,
             .keysym = Keysym.j,
             .modifiers = Super|Ctrl,
+            .event = .repeat,
             .action = .{ .resize = .{ .step = .{ .vertical = 10 } } }
         },
         .{
             .mode = .floating,
             .keysym = Keysym.k,
             .modifiers = Super|Ctrl,
+            .event = .repeat,
             .action = .{ .resize = .{ .step = .{ .vertical = -10 } } }
         },
         .{
@@ -762,7 +773,7 @@ fn libinput_config(name: ?[]const u8) LibinputConfig {
     };
 }
 
-pub const repeat_info: UnionWrap(?KeyboardRepeatInfo)    = .{ .value = .{ .rate = 50, .delay = 300 } };
+pub const repeat_info: UnionWrap(?KeyboardRepeatInfo)    = .{ .value = .{ .rate = repeat_rate, .delay = repeat_delay } };
 pub const scroll_factor: UnionWrap(?f64)                 = .{ .value = null };
 pub const libinput: UnionWrap(LibinputConfig)            = .{ .func = libinput_config };
 pub const keyboard: UnionWrap(KeyboardConfig)            = .{ .value = .{} };
