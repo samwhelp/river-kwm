@@ -57,7 +57,7 @@ xkb_keyboards: wl.list.Head(XkbKeyboard, .link) = undefined,
 windows: wl.list.Head(Window, .link) = undefined,
 focus_stack: wl.list.Head(Window, .flink) = undefined,
 
-key_repeat: ?KeyRepeat = undefined,
+key_repeat: ?KeyRepeat,
 
 bar_status_fd: ?posix.fd_t = null,
 
@@ -107,6 +107,7 @@ pub fn init(
         .rwm_input_manager = rwm_input_manager,
         .rwm_libinput_config = rwm_libinput_config,
         .rwm_xkb_config = rwm_xkb_config,
+        .key_repeat = undefined,
         .terminal_windows = .init(utils.allocator),
         .env = process.getEnvMap(utils.allocator) catch |err| blk: {
             log.warn("get EnvMap failed: {}", .{ err });
