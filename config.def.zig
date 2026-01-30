@@ -55,7 +55,7 @@ const PointerBinding = struct {
     button: Button,
     modifiers: u32,
     action: kwm.binding.Action,
-    event: river.PointerBindingV1.Event = .pressed,
+    event: kwm.binding.PointerBinding.Event = .pressed,
 };
 const BorderColor = struct {
     focus: u32,
