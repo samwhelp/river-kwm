@@ -43,6 +43,7 @@ pub fn run(wl_display: *wl.Display) !void {
     posix.sigaddset(&mask, posix.SIG.CHLD);
     posix.sigprocmask(posix.SIG.BLOCK, &mask, null);
     const signal_fd = try posix.signalfd(-1, &mask, 1 << @bitOffsetOf(posix.O, "NONBLOCK"));
+    defer posix.close(signal_fd);
 
     const fd_type_num = @typeInfo(FDType).@"enum".fields.len;
     var fd_buffer: [fd_type_num]posix.pollfd = undefined;
